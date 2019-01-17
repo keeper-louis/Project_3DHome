@@ -22,5 +22,22 @@ namespace KEEPER.K3._3D.Core.ParamOption
         /// 单据转换规则KEY
         /// </summary>
         public string ConvertRuleKey { get; set; }
+
+        /// <summary>
+        /// 源单ids
+        /// 如果按整单下推，该参数可用集合长度>1
+        /// 如果按明细下推，该参数集合长度=1
+        /// </summary>
+        public List<long> SourceBillIds { get; set; }
+
+        /// <summary>
+        /// 源单明细ids
+        /// </summary>
+        public List<long> SourceBillEntryIds { get; set; }
+
+        /// <summary>
+        /// 源单明细实体key
+        /// </summary>
+        public string SourceEntryEntityKey { get; set; }
     }
 }

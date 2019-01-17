@@ -79,6 +79,10 @@
       <Project>{9B1B43C7-7D81-4394-B38D-4C504F436D16}</Project>
       <Name>KEEPER.K3.3D.Contracts</Name>
     </ProjectReference>
+    <ProjectReference Include="..\KEEPER.K3.3D.Core\KEEPER.K3.3D.Core.csproj">
+      <Project>{7108D146-9EED-4C0D-9F2C-68FAC906D9C0}</Project>
+      <Name>KEEPER.K3.3D.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
