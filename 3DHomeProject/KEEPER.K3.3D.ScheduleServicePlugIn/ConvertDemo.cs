@@ -8,6 +8,7 @@ using Kingdee.BOS;
 using Kingdee.BOS.Core;
 using System.ComponentModel;
 using KEEPER.K3._3D.Core.ParamOption;
+using KEEPER.K3._3D._3DServiceHelper;
 
 namespace KEEPER.K3._3D.ScheduleServicePlugIn
 {
@@ -16,6 +17,8 @@ namespace KEEPER.K3._3D.ScheduleServicePlugIn
     {
         public void Run(Context ctx, Schedule schedule)
         {
+            ctx.UserId = 214076;
+            ctx.UserName = "扫码专用账户";
             ConvertOption option = new ConvertOption();
             option.SourceFormId = "SFC_OperationPlanning";
             option.TargetFormId = "SFC_OperationReport";
@@ -34,6 +37,7 @@ namespace KEEPER.K3._3D.ScheduleServicePlugIn
             sourceBillEntryIds.Add(4135738);
             option.SourceBillEntryIds = sourceBillEntryIds;
             option.SourceEntryEntityKey = "FSubEntity";
+            _3DServiceHelper._3DServiceHelper.ConvertBills(ctx, option);
         }
     }
 }

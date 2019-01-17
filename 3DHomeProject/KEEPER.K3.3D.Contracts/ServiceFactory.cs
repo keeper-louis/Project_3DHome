@@ -55,7 +55,7 @@ namespace KEEPER.K3._3D.Contracts
 
             ////增加对应的接口与实现类的对应关系
 
-            _mapServer.Add(typeof(ICommonService), "KEEPER.K3.App.CommonService,KEEPER.K3.App");
+            _mapServer.Add(typeof(ICommonService), "KEEPER.K3.APP.CommonService,KEEPER.K3.APP");
 
             //这句话放到最后
             noRegistered = false;

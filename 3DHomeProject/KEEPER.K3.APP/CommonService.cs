@@ -60,8 +60,8 @@ namespace KEEPER.K3.APP
             long targetOrgId = 0;
             // 自定义参数字典：把一些自定义参数，传递到转换插件中；转换插件再根据这些参数，进行特定处理
             Dictionary<string, object> custParams = new Dictionary<string, object>();
-            custParams.Add("1", 1);
-            custParams.Add("2", 2);
+            //custParams.Add("1", 1);
+            //custParams.Add("2", 2);
             // 组装下推参数对象
             PushArgs pushArgs = new PushArgs(rule, srcSelectedRows.ToArray())
             {
