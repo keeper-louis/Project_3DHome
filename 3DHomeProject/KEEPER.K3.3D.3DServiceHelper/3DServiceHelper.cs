@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace KEEPER.K3._3D._3DServiceHelper
 {
     /// <summary>
-    /// test
+    /// 
     /// </summary>
     public class _3DServiceHelper
     {
