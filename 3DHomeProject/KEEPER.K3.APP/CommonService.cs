@@ -46,7 +46,7 @@ namespace KEEPER.K3.APP
             foreach (long billId in option.SourceBillIds)
             {
                 srcSelectedRows = new List<ListSelectedRow>();
-                int rowKey =1;
+                int rowKey = -1;
                 // 把待下推的源单内码，逐个创建ListSelectedRow对象，添加到集合中
                 //srcSelectedRows.Add(new ListSelectedRow(billId.ToString(), string.Empty, 0, option.SourceFormId));
                 // 特别说明：上述代码，是整单下推；
@@ -60,7 +60,15 @@ namespace KEEPER.K3.APP
                     fieldValues.Add(option.SourceEntryEntityKey,billEntryId.ToString());
                     row.FieldValues = fieldValues;
                     srcSelectedRows.Add(row);
-                    dic.Add(billEntryId, new List<Tuple<string, int>> { new Tuple<string, int>(" ", 1) });
+                    if (rowKey == 1)
+                    {
+                        dic.Add(billEntryId, new List<Tuple<string, int>> { new Tuple<string, int>(" ", 3) });
+                    }
+                    else
+                    {
+                        dic.Add(billEntryId, new List<Tuple<string, int>> { new Tuple<string, int>(" ", 1) });
+                    }
+                    
                 } 
             }
             // 指定目标单单据类型:情况比较复杂，直接留空，会下推到默认的单据类型
@@ -83,6 +91,7 @@ namespace KEEPER.K3.APP
             OperateOption option1 = OperateOption.Create();
             option1.SetVariableValue(BOSConst.CST_ConvertValidatePermission, false);
             option1.SetVariableValue("OpQtydic", dic);
+            option1.SetVariableValue("IsScanning", true);
             ConvertOperationResult operationResult = convertService.Push(ctx, pushArgs, option1);
             //targetDatas = convertService.Push(ctx, pushArgs, OperateOption.Create()).TargetDataEntities
               //  .Select(s => s.DataEntity);
