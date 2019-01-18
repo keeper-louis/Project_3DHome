@@ -16,10 +16,10 @@ namespace KEEPER.K3._3D._3DServiceHelper
     /// </summary>
     public class _3DServiceHelper
     {
-        public static IEnumerable<DynamicObject> ConvertBills(Context ctx, ConvertOption option)
+        public static DynamicObject[] ConvertBills(Context ctx, ConvertOption option)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            IEnumerable<DynamicObject> targetDatas = service.ConvertBills(ctx, option);
+            DynamicObject[] targetDatas = service.ConvertBills(ctx, option);
             return targetDatas;
 
         }

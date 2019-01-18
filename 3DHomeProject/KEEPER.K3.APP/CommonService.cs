@@ -17,12 +17,13 @@ using Kingdee.BOS.Core.Metadata;
 using Kingdee.BOS.Util;
 using Kingdee.BOS.Core.Interaction;
 using Kingdee.BOS.Core.DynamicForm;
+using Kingdee.BOS.Core.Const;
 
 namespace KEEPER.K3.APP
 {
     public class CommonService : ICommonService
     {
-        public IEnumerable<DynamicObject> ConvertBills(Context ctx, ConvertOption option)
+        public DynamicObject[] ConvertBills(Context ctx, ConvertOption option)
         {
             IEnumerable<DynamicObject> targetDatas = null;
             IConvertService convertService = ServiceHelper.GetService<IConvertService>();
@@ -41,16 +42,25 @@ namespace KEEPER.K3.APP
             // 开始构建下推参数：
             // 待下推的源单数据行
             List<ListSelectedRow> srcSelectedRows = new List<ListSelectedRow>();
+            Dictionary<long, List<Tuple<string, int>>> dic = new Dictionary<long, List<Tuple<string, int>>>();
             foreach (long billId in option.SourceBillIds)
             {
-
+                srcSelectedRows = new List<ListSelectedRow>();
+                int rowKey =1;
                 // 把待下推的源单内码，逐个创建ListSelectedRow对象，添加到集合中
                 //srcSelectedRows.Add(new ListSelectedRow(billId.ToString(), string.Empty, 0, option.SourceFormId));
                 // 特别说明：上述代码，是整单下推；
                 // 如果需要指定待下推的单据体行，请参照下句代码，在ListSelectedRow中，指定EntryEntityKey以及EntryId
                 foreach (long billEntryId in option.SourceBillEntryIds)
                 {
-                    srcSelectedRows.Add(new ListSelectedRow(billId.ToString(), billEntryId.ToString(), 0, option.SourceFormId) { EntryEntityKey = option.SourceEntryEntityKey });
+                    //srcSelectedRows.Add(new ListSelectedRow(billId.ToString(), billEntryId.ToString(), rowKey++, option.SourceFormId) { EntryEntityKey = option.SourceEntryEntityKey });
+                    ListSelectedRow row = new ListSelectedRow(billId.ToString(), billEntryId.ToString(), rowKey++, option.SourceFormId);
+                    row.EntryEntityKey = option.SourceEntryEntityKey;
+                    Dictionary<string, string> fieldValues = new Dictionary<string, string>();
+                    fieldValues.Add(option.SourceEntryEntityKey,billEntryId.ToString());
+                    row.FieldValues = fieldValues;
+                    srcSelectedRows.Add(row);
+                    dic.Add(billEntryId, new List<Tuple<string, int>> { new Tuple<string, int>(" ", 1) });
                 } 
             }
             // 指定目标单单据类型:情况比较复杂，直接留空，会下推到默认的单据类型
@@ -70,9 +80,12 @@ namespace KEEPER.K3.APP
                 CustomParams = custParams
             };
             // 调用下推服务，生成下游单据数据包
-            ConvertOperationResult operationResult = convertService.Push(ctx, pushArgs, OperateOption.Create());
-            targetDatas = convertService.Push(ctx, pushArgs, OperateOption.Create()).TargetDataEntities
-                .Select(s => s.DataEntity);
+            OperateOption option1 = OperateOption.Create();
+            option1.SetVariableValue(BOSConst.CST_ConvertValidatePermission, false);
+            option1.SetVariableValue("OpQtydic", dic);
+            ConvertOperationResult operationResult = convertService.Push(ctx, pushArgs, option1);
+            //targetDatas = convertService.Push(ctx, pushArgs, OperateOption.Create()).TargetDataEntities
+              //  .Select(s => s.DataEntity);
             // 开始处理下推结果:
             // 获取下推生成的下游单据数据包
             DynamicObject[] targetBillObjs = (from p in operationResult.TargetDataEntities select p.DataEntity).ToArray();
@@ -85,7 +98,7 @@ namespace KEEPER.K3.APP
             // 示例代码略
             // 读取目标单据元数据
             IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();
-            var targetBillMeta = metaService.Load(ctx, "目标单据ID") as FormMetadata;
+            var targetBillMeta = metaService.Load(ctx, option.TargetFormId) as FormMetadata;
             // 构建保存操作参数：设置操作选项值，忽略交互提示
             OperateOption saveOption = OperateOption.Create();
             // 忽略全部需要交互性质的提示，直接保存；
@@ -106,7 +119,7 @@ namespace KEEPER.K3.APP
             {
                 //return;
             }
-            return targetDatas;
+            return targetBillObjs;
         }
 
         /// <summary>

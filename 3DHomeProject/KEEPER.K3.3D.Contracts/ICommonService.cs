@@ -26,7 +26,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        IEnumerable<DynamicObject> ConvertBills(Context ctx, ConvertOption option);
+        DynamicObject[] ConvertBills(Context ctx, ConvertOption option);
 
     }
 }
