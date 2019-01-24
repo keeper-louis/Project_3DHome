@@ -17,7 +17,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
         {
             ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
             string objectID = this.ListView.BillBusinessInfo.GetForm().Id;
-            string entiryKey = this.ListView.Model.BillBusinessInfo.GetField("FQty").EntityKey;
+            //string entiryKey = this.ListView.Model.BillBusinessInfo.GetField("FQty").EntityKey;
 
             switch (e.BarItemKey.ToUpperInvariant())
             {
