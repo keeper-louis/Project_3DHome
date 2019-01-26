@@ -1,5 +1,6 @@
 ﻿using KEEPER.K3._3D.Core.ParamOption;
 using Kingdee.BOS;
+using Kingdee.BOS.Core.DynamicForm;
 using Kingdee.BOS.Orm.DataEntity;
 using Kingdee.BOS.Rpc;
 using System;
@@ -28,5 +29,17 @@ namespace KEEPER.K3._3D.Contracts
         [FaultContract(typeof(ServiceFault))]
         DynamicObject[] ConvertBills(Context ctx, ConvertOption option);
 
+
+        /// <summary>
+        /// 组装采购件直接调拨数据包
+        /// </summary>
+        /// <param name="ctx">上下文</param>
+        /// <param name="FormID">直接调拨单标识</param>
+        /// <param name="fillBillPropertys">数据</param>
+        /// <param name="BillTypeId">单据类型ID</param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        DynamicObject installCostRequestPackage(Context ctx, string FormID, Action<IDynamicFormViewService> fillBillPropertys, string BillTypeId);
     }
 }
