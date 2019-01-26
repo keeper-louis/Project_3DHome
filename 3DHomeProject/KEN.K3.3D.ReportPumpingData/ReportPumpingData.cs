@@ -29,7 +29,7 @@ namespace KEN.K3._3D.ReportPumpingData
             DBUtils.Execute(ctx, strSql);
 
             //从视图插入数据到视图物理表
-            strSql = string.Format(@"/*dialect*/select*,scantime fdate into  processview from [192.168.1.77].[DB].dbo.processview v ");
+            strSql = string.Format(@"/*dialect*/select*,CONVERT(varchar(10),scantime, 120) fdate into  processview from [192.168.1.77].[DB].dbo.processview v ");
             DBUtils.Execute(ctx, strSql);
 
             //删除问题数据
@@ -41,10 +41,17 @@ or linenumber='c' ");
             DBUtils.Execute(ctx, strSql);
 
             //匹配不存在于接口数据表的视图物理表的数据 插入到 接口数据表中
-            strSql = string.Format(@"/*dialect*/insert into prtable select salenumber,linenumber,Technicscode,amount,state,'0' status,scantime,scantime fdate ,getdate() Fsubdate
+            strSql = string.Format(@"/*dialect*/insert into prtable select salenumber,linenumber,Technicscode,amount,state,'0' status,
+scantime,CONVERT(varchar(10),scantime, 120) fdate ,getdate() Fsubdate
 from processview v where not exists(select * from prtable pr where pr.salenumber=v.Salenumber and pr.linenumber=v.Linenumber and 
 v.Technicscode=pr.Technicscode and v.scantime=pr.scantime) ");
             DBUtils.Execute(ctx, strSql);
+
+
+            //标识过期数据 status=4
+            strSql = @"/*dialect*/   update prtable set status = 4 where Scantime< '2018-12-1' and status=0 ";
+            DBUtils.Execute(ctx, strSql);
+
 
             //标识重复扫描数据 status=2
             strSql = @"/*dialect*/update Prtable set status=2 from
@@ -109,19 +116,26 @@ from t_BD_MaterialBase tbmb, t_BD_Material tbm
             strSql = string.Format(@"/*dialect*/update prtable set status=3 where State=3 and Technicscode<>10 and status=0");
             DBUtils.Execute(ctx, strSql);
 
-            //标识过期数据 status=4
-            strSql = @"/*dialect*/   update prtable set status = 4 where Scantime< '2018-11-1' and status=0 ";
-            DBUtils.Execute(ctx, strSql);
+
 
             //根据业务改变fdate的时间
             strSql = @"/*dialect*/   ";
             DBUtils.Execute(ctx, strSql);
 
             //把接口数据表中status为0的数据（未插入到待录入表的数据状态） sum数量 插入到 待录入表
-            strSql = string.Format(@"/*dialect*/insert into Prtablein  select  Salenumber,Linenumber,Technicscode, sum(Amount) amount,State,'0' status,scantime,'' FsubDate
+            strSql = string.Format(@"/*dialect*/insert into Prtablein  select  Salenumber,Linenumber,Technicscode, sum(Amount) amount,
+State,'0' status,scantime,'' FsubDate,0,0
  from(select Salenumber, Linenumber, Technicscode, CONVERT(varchar(10), pr.scantime, 120) scantime, amount, State
  from prtable pr where pr.status = 0  ) a  group by
  Salenumber, Linenumber, Technicscode, scantime, State ");
+            DBUtils.Execute(ctx, strSql);
+
+            //把仓库号给采购件
+            strSql= string.Format(@"/*dialect*/ update Prtablein set fstockid=a.FNUMBER from (
+select distinct tbs.FNUMBER,pr.salenumber,pr.linenumber from T_SAL_ORDER tso,  
+T_SAL_ORDERENTRY tsoe,Prtablein pr  ,Purchase2Stock ps,t_BD_Stock tbs
+where tso.fid=tsoe.FID and pr.Linenumber=tsoe.FSEQ and pr.Salenumber=tso.FBILLNO and tsoe.FMATERIALID=ps.FMATERIAL and tbs.FSTOCKID=ps.FSTOCK and pr.state=3 
+ ) a where Prtablein.salenumber=a.salenumber and Prtablein.linenumber=a.linenumber ");
             DBUtils.Execute(ctx, strSql);
             //把接口数据表中status全置为1 （已插入到待录入表的数据状态）
             strSql = string.Format(@"/*dialect*/update prtable set status = 1 where status=0");
@@ -135,7 +149,7 @@ from t_BD_MaterialBase tbmb, t_BD_Material tbm
 
             //把已存在于错误信息表中s/l/t相同的数据直接写入到 错误信息表中 
             string strSql = string.Format(@"/*dialect*/ INSERT INTO Processtable select pr.id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER, pr.linenumber LINENUMBER, pr.technicscode TECHNICSCODE, pr.id PRTABLEINID,
-    prt.Reason,state STATE, pr.fdate FDATE, getdate() FSUBDATE from Prtablein pr, Processtable prt
+    prt.Reason,pr.state STATE, pr.fdate FDATE, getdate() FSUBDATE from Prtablein pr, Processtable prt
     where pr.salenumber = prt.Salenumber and pr.linenumber = prt.Linenumber and pr.Technicscode = prt.Technicscode and pr.status = 0");
             DBUtils.Execute(ctx, strSql);
 
@@ -165,31 +179,31 @@ and Linenumber=tso.FSALEORDERENTRYSEQ and Salenumber=tso.FSALEORDERNUMBER and te
              strSql = string.Format(@"/*dialect*/INSERT INTO Processtable select id FBILLNO,'A' FDOCUMENTSTATUS, Prtablein.salenumber SALENUMBER,Prtablein.linenumber LINENUMBER,Prtablein.technicscode TECHNICSCODE,id PRTABLEINID,
 '大于可汇报数量' REASON,state STATE,fdate FDATE,getdate() FSUBDATE  from Prtablein ,
  (select a.Salenumber,a.Linenumber,a.Technicscode 
- from (select Salenumber,Linenumber,Technicscode,sum(Amount) amount from Prtablein where status=0 group by  Salenumber,Linenumber,Technicscode) a,
+ from (select Salenumber,Linenumber,Technicscode,sum(Amount) amount from Prtablein where status<>2 and status<>4 group by  Salenumber,Linenumber,Technicscode) a,
   (select  tso.FSALEORDERNUMBER salenumber,tso.FSALEORDERENTRYSEQ linenumber,tsod.FOPERNUMBER technicscode,(FOPERQTY-FREPORTBASEQTY) amount
  from T_SFC_OPERPLANNING tso, T_SFC_OPERPLANNINGDETAIL tsod ,T_SFC_OPERPLANNINGDETAIL_B tsodb
  where tsodb.FDETAILID=tsod.FDETAILID
  and tso.fid=tsodb.FENTRYID )b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.Technicscode=b.technicscode and a.amount>b.amount) c
- where Prtablein.Salenumber=c.Salenumber and Prtablein.Linenumber=c.Linenumber and Prtablein.Technicscode=c.Technicscode");
+ where Prtablein.Salenumber=c.Salenumber and Prtablein.Linenumber=c.Linenumber and Prtablein.Technicscode=c.Technicscode and Prtablein.status=0");
             DBUtils.Execute(ctx, strSql);
             //把汇报数量大于工序计划单中可汇报数量的数据status标识为2
-            strSql = string.Format(@"/*dialect*/update Prtablein set status=2 from
+            strSql = string.Format(@"/*dialect*/ update Prtablein set status=2 from
  (select a.Salenumber,a.Linenumber,a.Technicscode 
- from (select Salenumber,Linenumber,Technicscode,sum(Amount) amount from Prtablein where status=0 group by  Salenumber,Linenumber,Technicscode) a,
+ from (select Salenumber,Linenumber,Technicscode,sum(Amount) amount from Prtablein where status<>2 and status<>4  group by  Salenumber,Linenumber,Technicscode) a,
   (select  tso.FSALEORDERNUMBER salenumber,tso.FSALEORDERENTRYSEQ linenumber,tsod.FOPERNUMBER technicscode,(FOPERQTY-FREPORTBASEQTY) amount
  from T_SFC_OPERPLANNING tso, T_SFC_OPERPLANNINGDETAIL tsod ,T_SFC_OPERPLANNINGDETAIL_B tsodb
  where tsodb.FDETAILID=tsod.FDETAILID
  and tso.fid=tsodb.FENTRYID )b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.Technicscode=b.technicscode and a.amount>b.amount) c
- where Prtablein.Salenumber=c.Salenumber and Prtablein.Linenumber=c.Linenumber and Prtablein.Technicscode=c.Technicscode");
+ where Prtablein.Salenumber=c.Salenumber and Prtablein.Linenumber=c.Linenumber and Prtablein.Technicscode=c.Technicscode and Prtablein.status=0");
             DBUtils.Execute(ctx, strSql);
-
+             
             //查询sacntime小于下达日期数据 写入错误信息表
             strSql = string.Format(@"/*dialect*/INSERT INTO Processtable select id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER,pr.linenumber LINENUMBER,pr.technicscode TECHNICSCODE,id PRTABLEINID,
 'sacntime小于下达日期' REASON,state STATE,fdate FDATE,getdate() FSUBDATE  
  from Prtablein pr,(select FPlanStartDate ,tso.FSaleOrderNumber,tso.FSaleOrderEntrySeq 
  from T_PRD_MO trm,T_PRD_MOENTRY  trme ,T_SFC_OPERPLANNING tso where trm.fid=trme.fid
  and  trm.FBILLNO=tso.FMONumber and tso.FMOEntrySeq=trme.fseq ) a
- where pr.fdate<a.FPLANSTARTDATE and pr.salenumber=a.FSaleOrderNumber and pr.linenumber=a.FSaleOrderEntrySeq and Prtablein.status=0");
+ where pr.fdate<a.FPLANSTARTDATE and pr.salenumber=a.FSaleOrderNumber and pr.linenumber=a.FSaleOrderEntrySeq and pr.status=0");
             DBUtils.Execute(ctx, strSql);
             //把sacntime小于下达日期status标识为2
             strSql = string.Format(@"/*dialect*/update Prtablein set status=2 from(select FPlanStartDate ,tso.FSaleOrderNumber,tso.FSaleOrderEntrySeq 
