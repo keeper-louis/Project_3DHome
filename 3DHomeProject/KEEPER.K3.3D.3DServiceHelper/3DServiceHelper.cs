@@ -1,4 +1,5 @@
 ﻿using KEEPER.K3._3D.Contracts;
+using KEEPER.K3._3D.Core.Entity;
 using KEEPER.K3._3D.Core.ParamOption;
 using Kingdee.BOS;
 using Kingdee.BOS.Contracts;
@@ -44,5 +45,25 @@ namespace KEEPER.K3._3D._3DServiceHelper
             IOperationResult saveResult = service.SaveBill(ctx, FormID, dyObject);
             return saveResult;
         }
+
+        public static IOperationResult BatchSave(Context ctx, string FormID, DynamicObject[] dyObject)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            IOperationResult saveResult = service.BatchSaveBill(ctx, FormID, dyObject);
+            return saveResult;
+        }
+
+        public static Boolean isTransfer(Context ctx)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.isTransfer(ctx);
+        }
+
+        public static List<SalOrderTransferList> getPurTransferData(Context ctx)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.getPurTransferData(ctx);
+        }
+
     }
 }

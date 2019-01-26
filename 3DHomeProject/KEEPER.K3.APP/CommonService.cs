@@ -24,11 +24,22 @@ using Kingdee.BOS.Core.Bill;
 using Kingdee.BOS.Core.DynamicForm.PlugIn;
 using Kingdee.BOS.Core;
 using Kingdee.BOS.Core.DynamicForm.PlugIn.Args;
+using Kingdee.BOS.App.Data;
+using KEEPER.K3._3D.Core.Entity;
 
 namespace KEEPER.K3.APP
 {
     public class CommonService : ICommonService
     {
+        public IOperationResult BatchSaveBill(Context ctx, string FormID, DynamicObject[] dyObject)
+        {
+            IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();//元数据服务
+            FormMetadata Meta = metaService.Load(ctx, FormID) as FormMetadata;//获取元数据
+            OperateOption SaveOption = OperateOption.Create();
+            IOperationResult SaveResult = BusinessDataServiceHelper.Save(ctx, Meta.BusinessInfo, dyObject, SaveOption, "Save");
+            return SaveResult;
+        }
+
         public DynamicObject[] ConvertBills(Context ctx, ConvertOption option)
         {
             IEnumerable<DynamicObject> targetDatas = null;
@@ -137,6 +148,51 @@ namespace KEEPER.K3.APP
             return targetBillObjs;
         }
 
+        public List<SalOrderTransferList> getPurTransferData(Context ctx)
+        {
+            string strDateSql = string.Format(@"/*dialect*/select distinct prtIn.fdate from prtablein prtIn where prtIn.state = 3 and prtIn.status = 3 and prtIn.ferrorstatus <> 1");
+            DynamicObjectCollection dateData= DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
+            if (dateData.Count()>0)
+            {
+                List<SalOrderTransferList> list = new List<SalOrderTransferList>();
+                foreach (DynamicObject dateCol in dateData)
+                {
+                    SalOrderTransferList sallist = new SalOrderTransferList();
+                    sallist.BusinessDate = Convert.ToDateTime(dateCol["fdate"]);
+                    string strSql = string.Format(@"select orderentry.FMATERIALID,orderentry.FAUXPROPID,orderentry.FLOT,prtIn.amount,prtIn.Fstockid
+  from prtablein prtIn
+ inner join t_sal_order salorder
+    on prtIn.salenumber = salorder.fbillno
+   and prtIn.state = 3
+   and prtIn.status = 3
+   and prtIn.ferrorstatus <> 1
+ inner join t_sal_orderentry orderentry
+ on salorder.fid = orderentry.fid
+ and prtIn.linenumber = orderentry.fseq
+ where prtIn.date = {0}", Convert.ToDateTime(dateCol["fdate"]));
+                    DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
+                    List<SalOrderTransfer> salEntryDataList = new List<SalOrderTransfer>();
+                    foreach (DynamicObject purTransferData in PurTransferData)
+                    {
+                        SalOrderTransfer salEntryData = new SalOrderTransfer();
+                        salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
+                        salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
+                        salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
+                        salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                        salEntryData.stocknumber = Convert.ToString(purTransferData["Fstockid"]);
+                        salEntryDataList.Add(salEntryData);
+                    }
+                    sallist.salOrderTransfer = salEntryDataList;
+                    list.Add(sallist);
+                }
+                return list;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public DynamicObject installCostRequestPackage(Context ctx, string FormID, Action<IDynamicFormViewService> fillBillPropertys, string BillTypeId = "")
         {
             FormMetadata Meta = MetaDataServiceHelper.Load(ctx, FormID) as FormMetadata;//获取元数据
@@ -186,12 +242,29 @@ namespace KEEPER.K3.APP
             return billView.Model.DataObject;
         }
 
+        public bool isTransfer(Context ctx)
+        {
+            //[采购件]and[预检完成]and[处理错误状态不等于审核]的数据
+            string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 3 and status = 3 and ferrorstatus <> 1");
+            int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
+            if (amount==0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+            
+        }
+
         public IOperationResult SaveBill(Context ctx, string FormID, DynamicObject dyObject)
         {
             IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();//元数据服务
             FormMetadata Meta = metaService.Load(ctx, FormID) as FormMetadata;//获取元数据
             OperateOption SaveOption = OperateOption.Create();
             IOperationResult SaveResult = BusinessDataServiceHelper.Save(ctx, Meta.BusinessInfo, dyObject, SaveOption, "Save");
+            //BusinessDataServiceHelper.Save()
             return SaveResult;
         }
 

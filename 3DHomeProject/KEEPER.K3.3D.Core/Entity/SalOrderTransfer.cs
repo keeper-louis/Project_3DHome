@@ -12,10 +12,28 @@ namespace KEEPER.K3._3D.Core.Entity
     public class SalOrderTransfer
     {
         /// <summary>
-        /// 调出库存组织 or 调入库存组织
+        /// 物料编码
         /// </summary>
-        public long orgID { get; set; }
-        
+        public long MATERIALID { get; set; }
 
+        /// <summary>
+        /// 辅助属性
+        /// </summary>
+        public long AUXPROPID { get; set; }
+
+        /// <summary>
+        /// 批号
+        /// </summary>
+        public long Lot { get; set; }
+
+        /// <summary>
+        /// 数量
+        /// </summary>
+        public int amount { get; set; }
+
+        /// <summary>
+        /// 仓库编码
+        /// </summary>
+        public string stocknumber { get; set; }
     }
 }

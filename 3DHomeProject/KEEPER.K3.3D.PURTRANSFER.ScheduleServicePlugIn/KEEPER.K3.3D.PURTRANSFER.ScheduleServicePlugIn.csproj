@@ -72,6 +72,10 @@
       <Project>{219FCD84-2801-44DA-8D6E-0BA8C377058E}</Project>
       <Name>KEEPER.K3.3D.3DServiceHelper</Name>
     </ProjectReference>
+    <ProjectReference Include="..\KEEPER.K3.3D.Core\KEEPER.K3.3D.Core.csproj">
+      <Project>{7108D146-9EED-4C0D-9F2C-68FAC906D9C0}</Project>
+      <Name>KEEPER.K3.3D.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

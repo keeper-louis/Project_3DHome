@@ -1,4 +1,5 @@
-﻿using KEEPER.K3._3D.Core.ParamOption;
+﻿using KEEPER.K3._3D.Core.Entity;
+using KEEPER.K3._3D.Core.ParamOption;
 using Kingdee.BOS;
 using Kingdee.BOS.Core.DynamicForm;
 using Kingdee.BOS.Orm.DataEntity;
@@ -53,5 +54,39 @@ namespace KEEPER.K3._3D.Contracts
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
         IOperationResult SaveBill(Context ctx, string FormID, DynamicObject dyObject);
+
+        /// <summary>
+        /// 批量保存单据
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="FormID"></param>
+        /// <param name="ids"></param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        IOperationResult BatchSaveBill(Context ctx, string FormID, DynamicObject[] dyObject);
+
+
+        /// <summary>
+        /// 判断是否继续进入采购调拨计划
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="FormID"></param>
+        /// <param name="ids"></param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        Boolean isTransfer(Context ctx);
+
+        /// <summary>
+        /// 获取采购调拨数据
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="FormID"></param>
+        /// <param name="ids"></param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        List<SalOrderTransferList> getPurTransferData(Context ctx);
     }
 }
