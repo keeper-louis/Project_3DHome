@@ -186,6 +186,15 @@ namespace KEEPER.K3.APP
             return billView.Model.DataObject;
         }
 
+        public IOperationResult SaveBill(Context ctx, string FormID, DynamicObject dyObject)
+        {
+            IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();//元数据服务
+            FormMetadata Meta = metaService.Load(ctx, FormID) as FormMetadata;//获取元数据
+            OperateOption SaveOption = OperateOption.Create();
+            IOperationResult SaveResult = BusinessDataServiceHelper.Save(ctx, Meta.BusinessInfo, dyObject, SaveOption, "Save");
+            return SaveResult;
+        }
+
         /// <summary>
         /// 判断操作结果是否成功，如果不成功，则直接抛错中断进程
         /// </summary>

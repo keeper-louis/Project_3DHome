@@ -41,5 +41,17 @@ namespace KEEPER.K3._3D.Contracts
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
         DynamicObject installCostRequestPackage(Context ctx, string FormID, Action<IDynamicFormViewService> fillBillPropertys, string BillTypeId);
+
+
+        /// <summary>
+        /// 保存单据
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="FormID"></param>
+        /// <param name="ids"></param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        IOperationResult SaveBill(Context ctx, string FormID, DynamicObject dyObject);
     }
 }

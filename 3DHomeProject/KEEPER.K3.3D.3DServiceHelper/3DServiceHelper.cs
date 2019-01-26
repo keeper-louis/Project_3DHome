@@ -37,5 +37,12 @@ namespace KEEPER.K3._3D._3DServiceHelper
             DynamicObject model = service.installCostRequestPackage(ctx, FormID, fillBillPropertys, "");
             return model;
         }
+
+        public static IOperationResult Save(Context ctx, string FormID, DynamicObject dyObject)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            IOperationResult saveResult = service.SaveBill(ctx, FormID, dyObject);
+            return saveResult;
+        }
     }
 }

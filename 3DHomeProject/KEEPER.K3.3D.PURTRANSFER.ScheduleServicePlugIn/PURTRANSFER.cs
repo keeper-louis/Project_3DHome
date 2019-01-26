@@ -20,6 +20,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
         {
             Action<IDynamicFormViewService> fillBillPropertys = new Action<IDynamicFormViewService>(fillPropertys);
             DynamicObject billModel = _3DServiceHelper._3DServiceHelper.CreateBillMode(ctx, "STK_TransferDirect", fillBillPropertys);
+            IOperationResult saveResult = _3DServiceHelper._3DServiceHelper.Save(ctx, "STK_TransferDirect", billModel);
         }
 
 
