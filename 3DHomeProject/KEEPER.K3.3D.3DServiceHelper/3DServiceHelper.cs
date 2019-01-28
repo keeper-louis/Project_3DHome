@@ -65,5 +65,11 @@ namespace KEEPER.K3._3D._3DServiceHelper
             return service.getPurTransferData(ctx);
         }
 
+        public static void updateTableStatus(Context ctx, long[] ids, int status)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            service.updateTableStatus(ctx, ids, status);
+        }
+
     }
 }

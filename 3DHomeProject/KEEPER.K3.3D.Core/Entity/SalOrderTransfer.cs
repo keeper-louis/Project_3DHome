@@ -12,6 +12,31 @@ namespace KEEPER.K3._3D.Core.Entity
     public class SalOrderTransfer
     {
         /// <summary>
+        /// prtablein表的主键
+        /// </summary>
+        public long prtID { get; set; }
+
+        /// <summary>
+        /// prtablein表的fdate列
+        /// </summary>
+        public DateTime FDATE { get; set; }
+
+        /// <summary>
+        /// 销售订单号
+        /// </summary>
+        public string saleNumber { get; set; }
+
+        /// <summary>
+        /// 销售订单行号
+        /// </summary>
+        public string lineNumber { get; set; }
+
+        /// <summary>
+        /// 工序号
+        /// </summary>
+        public string technicsCode { get; set; }
+
+        /// <summary>
         /// 物料编码
         /// </summary>
         public long MATERIALID { get; set; }

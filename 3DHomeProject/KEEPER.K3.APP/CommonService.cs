@@ -26,6 +26,8 @@ using Kingdee.BOS.Core;
 using Kingdee.BOS.Core.DynamicForm.PlugIn.Args;
 using Kingdee.BOS.App.Data;
 using KEEPER.K3._3D.Core.Entity;
+using System.Data;
+using System.Data.SqlClient;
 
 namespace KEEPER.K3.APP
 {
@@ -184,6 +186,11 @@ namespace KEEPER.K3.APP
                     foreach (DynamicObject purTransferData in PurTransferData)
                     {
                         SalOrderTransfer salEntryData = new SalOrderTransfer();
+                        salEntryData.prtID = Convert.ToInt64(purTransferData["id"]);
+                        salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
+                        salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
+                        salEntryData.lineNumber = Convert.ToString(purTransferData["linenumber"]);
+                        salEntryData.technicsCode = Convert.ToString(purTransferData["technicscode"]);
                         salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
                         salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                         salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
@@ -277,9 +284,45 @@ namespace KEEPER.K3.APP
             return SaveResult;
         }
 
-        public void updateTableStatus(Context ctx)
+        public void updateTableStatus(Context ctx,long[] ids,int status)
         {
-            
+            //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+            DataTable dt = new DataTable();
+            dt.TableName = "prtablein";
+            var idCol = dt.Columns.Add("id");
+            idCol.DataType = typeof(long);
+            var statusCol = dt.Columns.Add("status");
+            statusCol.DataType = typeof(int);
+            var subdate = dt.Columns.Add("Fsubdate");
+            subdate.DataType = typeof(DateTime);
+            // 灌入测试数据
+            dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+            foreach (long item in ids)
+            {
+                dt.LoadDataRow(new object[] { item, status, DateTime.Now }, true);
+            }
+            dt.EndLoadData();
+            // 准备批量更新服务参数
+            // tableName : 待更新的物理表格名
+            // dt : 待更新的数据
+            BatchSqlParam batchUpdateParam = new BatchSqlParam("prtablein", dt);
+
+            // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+            // 匹配字段可以添加多个
+            // columnName: DataTable中的列名
+            // fieldName : 物料表格中匹配的字段名
+            batchUpdateParam.AddWhereExpression("id", KDDbType.Int64, "id");
+            // 设置待更新的字段
+            // columnName: DataTable中的列名
+            // fieldName : 对应的物料表格字段名
+            batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
+            // 设置待更新的字段
+            // columnName: DataTable中的列名
+            // fieldName : 对应的物料表格字段名
+            batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+            // 执行批量更新
+            Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+
         }
 
         /// <summary>

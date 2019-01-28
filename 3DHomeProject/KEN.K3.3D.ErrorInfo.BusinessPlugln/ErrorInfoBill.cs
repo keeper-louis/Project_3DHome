@@ -64,15 +64,15 @@ from  Processtable where exists (select  * from T_SFC_OPERPLANNING tso, T_SFC_OP
                     for (int i = 0; i < periodColl.Count; i++)
                     {
                         strSql = string.Format(@"/*dialect*/ delete Processtable 
-where salenumber='{0}' and linenumber='{1}' and technicscode='{2}')"
+where salenumber='{0}' and linenumber='{1}' and technicscode='{2}'"
 , Convert.ToString(periodColl[i]["salenumber"]), Convert.ToString(periodColl[i]["linenumber"]), Convert.ToString(periodColl[i]["technicscode"]));
                         DBUtils.Execute(this.Context, strSql);
                         strSql = string.Format(@"/*dialect*/ delete prtablein 
-where salenumber='{0}' and linenumber='{1}' and technicscode='{2}')"
+where salenumber='{0}' and linenumber='{1}' and technicscode='{2}'"
 , Convert.ToString(periodColl[i]["salenumber"]), Convert.ToString(periodColl[i]["linenumber"]), Convert.ToString(periodColl[i]["technicscode"]));
                         DBUtils.Execute(this.Context, strSql);
                         strSql = string.Format(@"/*dialect*/ delete prtable 
-where salenumber='{0}' and linenumber='{1}' and technicscode='{2}')"
+where salenumber='{0}' and linenumber='{1}' and technicscode='{2}'"
 , Convert.ToString(periodColl[i]["salenumber"]), Convert.ToString(periodColl[i]["linenumber"]), Convert.ToString(periodColl[i]["technicscode"]));
                         DBUtils.Execute(this.Context, strSql);
                     }

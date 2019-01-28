@@ -91,6 +91,6 @@ namespace KEEPER.K3._3D.Contracts
         /// <param name="ctx"></param>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        void updateTableStatus(Context ctx);
+        void updateTableStatus(Context ctx,long[] ids,int status);
     }
 }

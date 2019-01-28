@@ -24,8 +24,12 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
         {
             if (_3DServiceHelper._3DServiceHelper.isTransfer(ctx))
             {
-                purTransferData = _3DServiceHelper._3DServiceHelper.getPurTransferData(ctx);
-                purTransferData.Select(p => p.salOrderTransfer.Select(s => s.MATERIALID)).ToList();
+                purTransferData = _3DServiceHelper._3DServiceHelper.getPurTransferData(ctx);//本次执行计划处理的数据
+                //List<List<long>> aa = purTransferData.Select(p => p.salOrderTransfer.Select(s => s.MATERIALID).ToList()).ToList();
+                long[] bb = purTransferData.SelectMany(t => t.salOrderTransfer.Select(s => s.prtID).ToList()).ToArray();//本次执行计划要处理的数据的主键ID
+                _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, bb, 1);
+                //string tj = string.Join(",", bb);
+                //根据主键对数据标识进行更新，同时设置更新时间戳
                 List<DynamicObject> modelList = new List<DynamicObject>();
                 foreach (var item in purTransferData)
                 {
