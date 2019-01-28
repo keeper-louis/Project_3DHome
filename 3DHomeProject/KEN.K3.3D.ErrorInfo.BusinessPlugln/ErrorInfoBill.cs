@@ -20,9 +20,14 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
 
         public override void BarItemClick(BarItemClickEventArgs e)
         {
+           
             //处理无上游单据
-            if (String.Equals(e.BarItemKey.ToUpperInvariant(), "NoUpStream", StringComparison.CurrentCultureIgnoreCase))
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "NoUpStream", StringComparison.CurrentCultureIgnoreCase))
             {
+                if(!check("无上游单据"))
+                {
+                    return;
+                }
                 //预检前端选择数据
                 checkData();
                 //删除对应错误信息表中的数据
@@ -37,8 +42,12 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
 
             }
             //处理数量大于可汇报数量
-            if (String.Equals(e.BarItemKey.ToUpperInvariant(), "OverReportableQua", StringComparison.CurrentCultureIgnoreCase))
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "OverReportableQua", StringComparison.CurrentCultureIgnoreCase))
             {
+                if (!check("大于可汇报数量"))
+                {
+                    return;
+                }
                 //检查cloud工序汇报中是否还有没删除的单据，如果有残留单据不删除，没有的话删除
 
                 string filter = getSelectedRowsElements("FBILLNO");
@@ -96,8 +105,12 @@ where salenumber='{0}' and linenumber='{1}' and technicscode='{2}')"
 
 
             //处理sacntime小于下达日期
-            if (String.Equals(e.BarItemKey.ToUpperInvariant(), "SantimeLessThanIssueDate", StringComparison.CurrentCultureIgnoreCase))
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "SantimeLessThanIssueDate", StringComparison.CurrentCultureIgnoreCase))
             {
+                if (!check("sacntime小于下达日期"))
+                {
+                    return;
+                }
 
                 //预检前端选择数据
                 checkData();
@@ -111,9 +124,55 @@ where salenumber='{0}' and linenumber='{1}' and technicscode='{2}')"
                 DBUtils.Execute(this.Context, strSql);
 
             }
+            //处理采购件无对应仓库
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "NoStock", StringComparison.CurrentCultureIgnoreCase))
+            {
+
+                if (!check("采购件无对应仓库"))
+                {
+                    return;
+                }
+
+                string filter = getSelectedRowsElements("FBILLNO");
+                //判断前端数据中是否有非采购件数据 如果有直接return返回信息 
+                string strSql = string.Format(@"/*dialect*/ select id from prtablein where id in ({0}) and state<>3  ", filter);
+                DynamicObjectCollection periodColl = DBUtils.ExecuteDynamicObject(this.Context, strSql);
+                if (periodColl.Count != 0)
+                {
+                    string message = "单据编号为 ：";
+                    for (int i = 0; i < periodColl.Count; i++)
+                    {
+                        message = message + Convert.ToString(periodColl[i]["id"] + ",");
+                    }
+                    message.TrimEnd(',');
+                    message = message + "的报错信息并非采购件 无法处理！";
+                    //e.Cancel = true;
+                    this.View.ShowErrMessage(message);
+                    return;
+                }
+                //把选中数据的仓库号更新 并把status=3
+                strSql = string.Format(@"/*dialect*/ update Prtablein set fstockid=a.FNUMBER ,status=3 from (
+select distinct tbs.FNUMBER,pr.salenumber,pr.linenumber from T_SAL_ORDER tso,  
+T_SAL_ORDERENTRY tsoe,Prtablein pr  ,Purchase2Stock ps,t_BD_Stock tbs
+where tso.fid=tsoe.FID and pr.Linenumber=tsoe.FSEQ and pr.Salenumber=tso.FBILLNO and tsoe.FMATERIALID=ps.FMATERIAL and tbs.FSTOCKID=ps.FSTOCK and pr.state=3 
+and pr.id in (841795)
+ ) a where Prtablein.salenumber=a.salenumber and Prtablein.linenumber=a.linenumber ", filter);
+
+                DBUtils.Execute(this.Context, strSql);
+                //校验选择数据的仓库还 是否为0 如果为0 把status=2
+                strSql = string.Format(@"/*dialect*/update Prtablein set status=2 where Prtablein.state=3 and Prtablein.Fstockid='0' and Prtablein.id in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+
+                //并写入到错误信息表
+                strSql = string.Format(@"/*dialect*/insert into  processtable select id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER,pr.linenumber LINENUMBER,pr.technicscode TECHNICSCODE,id PRTABLEINID,
+'采购件无对应仓库' REASON,state STATE,fdate FDATE,getdate() FSUBDATE from Prtablein pr where pr.state=3 and pr.Fstockid='0' and pr.id in ({0}) ");
+
+
+            }
             this.View.Refresh();
 
         }
+
 
         private void checkData()
         {
@@ -166,6 +225,46 @@ and Pr.id in ({0})", filter);
             Elements = Elements.TrimEnd(',');
             return Elements;
         }
+        private Boolean check(String key)
+        {
+
+            ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
+
+
+            if (selectRows.Count() < 1)
+            {
+                this.View.ShowErrMessage("请至少选中一条数据！");
+                return false;
+            }
+
+            //判断报错信息是否一致
+
+            string Reason = string.Empty;
+            for (int i = 0; i < selectRows.Count(); i++)
+            {
+                if (string.Equals(Reason, Convert.ToString(selectRows[i].DataRow["FREASON"]), StringComparison.CurrentCultureIgnoreCase))
+                {
+                    Reason = Convert.ToString(selectRows[i].DataRow["FREASON"]);
+                }
+                else
+                {
+                    this.View.ShowErrMessage("选中数据必须为相同问题类型！");
+                    return false;
+                }
+            }
+
+            if (!string.Equals(Convert.ToString(selectRows[0].DataRow["FREASON"]), key, StringComparison.CurrentCultureIgnoreCase))
+            {
+                this.View.ShowErrMessage("请选择正确的处理方法！");
+                return false;
+                
+            }
+            return true;
+        }
+
+
+
+
     }
 }
 

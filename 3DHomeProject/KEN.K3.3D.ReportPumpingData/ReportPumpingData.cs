@@ -156,7 +156,7 @@ where tso.fid=tsoe.FID and pr.Linenumber=tsoe.FSEQ and pr.Salenumber=tso.FBILLNO
 
             //把已存在于错误信息表中s/l/t相同的数据status标识为2
             strSql = string.Format(@"/*dialect*/update Prtablein set status=2 from Processtable prt 
-where Prtablein.salenumber=Prtablein.Salenumber and Prtablein.linenumber=prt.Linenumber and Prtablein.Technicscode=prt.Technicscode and Prtablein.status=0");
+where Prtablein.salenumber=prt.Salenumber and Prtablein.linenumber=prt.Linenumber and Prtablein.Technicscode=prt.Technicscode and Prtablein.status=0");
             DBUtils.Execute(ctx, strSql);
 
             //查询无上游单据数据 写入错误信息表
@@ -211,7 +211,19 @@ and Linenumber=tso.FSALEORDERENTRYSEQ and Salenumber=tso.FSALEORDERNUMBER and te
  and  trm.FBILLNO=tso.FMONumber and tso.FMOEntrySeq=trme.fseq ) a
  where Prtablein.fdate<a.FPLANSTARTDATE and Prtablein.salenumber=a.FSaleOrderNumber and Prtablein.linenumber=a.FSaleOrderEntrySeq and Prtablein.status=0");
             DBUtils.Execute(ctx, strSql);
+            //查询没有对应仓库的采购件 写入错误信息表
+            strSql = string.Format(@"/*dialect*/insert into  processtable select id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER,pr.linenumber LINENUMBER,pr.technicscode TECHNICSCODE,id PRTABLEINID,
+'采购件无对应仓库' REASON,state STATE,fdate FDATE,getdate() FSUBDATE from Prtablein pr where pr.state=3 and pr.Fstockid='0' and pr.status=0 ");
+            DBUtils.Execute(ctx, strSql);
+            //把采购件无对应仓库的数据 status标识为2
+            strSql = string.Format(@"/*dialect*/update Prtablein set status=2 where Prtablein.state=3 and Prtablein.Fstockid='0' and Prtablein.status=0 ");
+            DBUtils.Execute(ctx, strSql);
 
+            //把剩余status=0的数据置为3 预检完成
+            strSql = string.Format(@"/*dialect*/update Prtablein set status = 3 where Prtablein.status = 0 ");
+            DBUtils.Execute(ctx, strSql);
+
+            
 
 
 

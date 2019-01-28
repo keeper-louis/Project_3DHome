@@ -169,7 +169,7 @@ namespace KEEPER.K3.APP
  inner join t_sal_orderentry orderentry
  on salorder.fid = orderentry.fid
  and prtIn.linenumber = orderentry.fseq
- where prtIn.date = {0}", Convert.ToDateTime(dateCol["fdate"]));
+ where prtIn.fdate = '{0}'", Convert.ToDateTime(dateCol["fdate"]));
                     DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                     List<SalOrderTransfer> salEntryDataList = new List<SalOrderTransfer>();
                     foreach (DynamicObject purTransferData in PurTransferData)
