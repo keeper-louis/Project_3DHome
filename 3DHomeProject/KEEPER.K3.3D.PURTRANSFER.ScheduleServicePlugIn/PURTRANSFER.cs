@@ -26,7 +26,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                 if (_3DServiceHelper._3DServiceHelper.isTransfer(ctx))
                 {
                     purTransferData = _3DServiceHelper._3DServiceHelper.getPurTransferData(ctx);
-                    List<Object> modelList = new List<object>();
+                    List<DynamicObject> modelList = new List<DynamicObject>();
                     foreach (var item in purTransferData)
                     {
                         transferData = item;
@@ -34,6 +34,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                         DynamicObject billModel = _3DServiceHelper._3DServiceHelper.CreateBillMode(ctx, "STK_TransferDirect", fillBillPropertys);
                         modelList.Add(billModel);
                     }
+                    
                     DynamicObject[] model = modelList.Select(p => p).ToArray() as DynamicObject[];
                     IOperationResult saveResult = _3DServiceHelper._3DServiceHelper.BatchSave(ctx, "STK_TransferDirect", model);
                 }
