@@ -22,7 +22,6 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
         private SalOrderTransferList transferData;
         public void Run(Context ctx, Schedule schedule)
         {
-            while (true) {
                 if (_3DServiceHelper._3DServiceHelper.isTransfer(ctx))
                 {
                     purTransferData = _3DServiceHelper._3DServiceHelper.getPurTransferData(ctx);
@@ -38,11 +37,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                     DynamicObject[] model = modelList.Select(p => p).ToArray() as DynamicObject[];
                     IOperationResult saveResult = _3DServiceHelper._3DServiceHelper.BatchSave(ctx, "STK_TransferDirect", model);
                 }
-                else
-                {
-                    break;
-                }
-            }
+            
         }
 
 
@@ -65,7 +60,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
             //新增分录
             //((IBillView)dynamicFormView).Model.CreateNewEntryRow("FBillEntry");
             //如果预知有多条分录，可以使用这个方法进行批量新增
-            ((IBillView)dynamicFormView).Model.BatchCreateNewEntryRow("FBillEntry", num);
+            ((IBillView)dynamicFormView).Model.BatchCreateNewEntryRow("FBillEntry", num-1);
             for (int i = 0; i < a.Count; i++)
             {
                 dynamicFormView.SetItemValueByID("FMaterialId", a[i].MATERIALID, i);

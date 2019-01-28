@@ -239,8 +239,8 @@ and Pr.id in ({0})", filter);
 
             //判断报错信息是否一致
 
-            string Reason = string.Empty;
-            for (int i = 0; i < selectRows.Count(); i++)
+            string Reason = Convert.ToString(selectRows[0].DataRow["FREASON"]);
+            for (int i = 1; i < selectRows.Count(); i++)
             {
                 if (string.Equals(Reason, Convert.ToString(selectRows[i].DataRow["FREASON"]), StringComparison.CurrentCultureIgnoreCase))
                 {
@@ -253,7 +253,7 @@ and Pr.id in ({0})", filter);
                 }
             }
 
-            if (!string.Equals(Convert.ToString(selectRows[0].DataRow["FREASON"]), key, StringComparison.CurrentCultureIgnoreCase))
+            if (!string.Equals(Reason, key, StringComparison.CurrentCultureIgnoreCase))
             {
                 this.View.ShowErrMessage("请选择正确的处理方法！");
                 return false;
