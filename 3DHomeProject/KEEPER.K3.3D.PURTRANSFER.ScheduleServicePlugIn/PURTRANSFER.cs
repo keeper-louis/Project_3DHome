@@ -22,22 +22,23 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
         private SalOrderTransferList transferData;
         public void Run(Context ctx, Schedule schedule)
         {
-                if (_3DServiceHelper._3DServiceHelper.isTransfer(ctx))
+            if (_3DServiceHelper._3DServiceHelper.isTransfer(ctx))
+            {
+                purTransferData = _3DServiceHelper._3DServiceHelper.getPurTransferData(ctx);
+                purTransferData.Select(p => p.salOrderTransfer.Select(s => s.MATERIALID)).ToList();
+                List<DynamicObject> modelList = new List<DynamicObject>();
+                foreach (var item in purTransferData)
                 {
-                    purTransferData = _3DServiceHelper._3DServiceHelper.getPurTransferData(ctx);
-                    List<DynamicObject> modelList = new List<DynamicObject>();
-                    foreach (var item in purTransferData)
-                    {
-                        transferData = item;
-                        Action<IDynamicFormViewService> fillBillPropertys = new Action<IDynamicFormViewService>(fillPropertys);
-                        DynamicObject billModel = _3DServiceHelper._3DServiceHelper.CreateBillMode(ctx, "STK_TransferDirect", fillBillPropertys);
-                        modelList.Add(billModel);
-                    }
-                    
-                    DynamicObject[] model = modelList.Select(p => p).ToArray() as DynamicObject[];
-                    IOperationResult saveResult = _3DServiceHelper._3DServiceHelper.BatchSave(ctx, "STK_TransferDirect", model);
+                    transferData = item;
+                    Action<IDynamicFormViewService> fillBillPropertys = new Action<IDynamicFormViewService>(fillPropertys);
+                    DynamicObject billModel = _3DServiceHelper._3DServiceHelper.CreateBillMode(ctx, "STK_TransferDirect", fillBillPropertys);
+                    modelList.Add(billModel);
                 }
-            
+
+                DynamicObject[] model = modelList.Select(p => p).ToArray() as DynamicObject[];
+                IOperationResult saveResult = _3DServiceHelper._3DServiceHelper.BatchSave(ctx, "STK_TransferDirect", model);
+            }
+
         }
 
 

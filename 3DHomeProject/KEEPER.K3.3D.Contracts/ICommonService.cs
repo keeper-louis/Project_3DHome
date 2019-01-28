@@ -71,8 +71,6 @@ namespace KEEPER.K3._3D.Contracts
         /// 判断是否继续进入采购调拨计划
         /// </summary>
         /// <param name="ctx"></param>
-        /// <param name="FormID"></param>
-        /// <param name="ids"></param>
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
@@ -82,11 +80,17 @@ namespace KEEPER.K3._3D.Contracts
         /// 获取采购调拨数据
         /// </summary>
         /// <param name="ctx"></param>
-        /// <param name="FormID"></param>
-        /// <param name="ids"></param>
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
         List<SalOrderTransferList> getPurTransferData(Context ctx);
+
+        /// <summary>
+        /// 更新中间表状态以及更新时间
+        /// </summary>
+        /// <param name="ctx"></param>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        void updateTableStatus(Context ctx);
     }
 }

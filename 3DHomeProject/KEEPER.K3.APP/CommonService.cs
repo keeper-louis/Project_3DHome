@@ -159,7 +159,16 @@ namespace KEEPER.K3.APP
                 {
                     SalOrderTransferList sallist = new SalOrderTransferList();
                     sallist.BusinessDate = Convert.ToDateTime(dateCol["fdate"]);
-                    string strSql = string.Format(@"select orderentry.FMATERIALID,orderentry.FAUXPROPID,orderentry.FLOT,prtIn.amount,prtIn.Fstockid
+                    string strSql = string.Format(@"/*dialect*/select prtIn.fdate,
+       prtIn.id,
+       prtIn.salenumber,
+       prtIn.linenumber,
+       prtIn.technicscode,
+       orderentry.FMATERIALID,
+       orderentry.FAUXPROPID,
+       orderentry.FLOT,
+       prtIn.amount,
+       prtIn.Fstockid
   from prtablein prtIn
  inner join t_sal_order salorder
     on prtIn.salenumber = salorder.fbillno
@@ -167,8 +176,8 @@ namespace KEEPER.K3.APP
    and prtIn.status = 3
    and prtIn.ferrorstatus <> 1
  inner join t_sal_orderentry orderentry
- on salorder.fid = orderentry.fid
- and prtIn.linenumber = orderentry.fseq
+    on salorder.fid = orderentry.fid
+   and prtIn.linenumber = orderentry.fseq
  where prtIn.fdate = '{0}'", Convert.ToDateTime(dateCol["fdate"]));
                     DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                     List<SalOrderTransfer> salEntryDataList = new List<SalOrderTransfer>();
@@ -266,6 +275,11 @@ namespace KEEPER.K3.APP
             IOperationResult SaveResult = BusinessDataServiceHelper.Save(ctx, Meta.BusinessInfo, dyObject, SaveOption, "Save");
             //BusinessDataServiceHelper.Save()
             return SaveResult;
+        }
+
+        public void updateTableStatus(Context ctx)
+        {
+            
         }
 
         /// <summary>
