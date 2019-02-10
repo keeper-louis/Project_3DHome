@@ -61,6 +61,14 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\WorkSpace\3DHome\K3Cloud\bin\Kingdee.BOS.ServiceHelper.dll</HintPath>
     </Reference>
+    <Reference Include="Kingdee.K3.SCM.App, Version=7.3.1116.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\WorkSpace\3DHome\K3Cloud\bin\Kingdee.K3.SCM.App.dll</HintPath>
+    </Reference>
+    <Reference Include="Kingdee.K3.SCM.ServiceHelper, Version=7.3.1116.1, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\WorkSpace\3DHome\K3Cloud\bin\Kingdee.K3.SCM.ServiceHelper.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
