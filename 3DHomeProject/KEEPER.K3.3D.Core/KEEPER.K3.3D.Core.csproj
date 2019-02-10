@@ -70,7 +70,8 @@
   <ItemGroup>
     <Compile Include="Entity\SalOrderTransfer.cs" />
     <Compile Include="Entity\SalOrderTransferList.cs" />
-    <Compile Include="ParamOption\BillStatusEnum.cs" />
+    <Compile Include="Entity\UpdatePrtableEntity.cs" />
+    <Compile Include="ParamOption\UpdatePrtableinEnum.cs" />
     <Compile Include="ParamOption\ConvertOption.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

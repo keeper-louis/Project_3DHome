@@ -2,6 +2,7 @@
 using KEEPER.K3._3D.Core.ParamOption;
 using Kingdee.BOS;
 using Kingdee.BOS.Core.DynamicForm;
+using Kingdee.BOS.Core.Validation;
 using Kingdee.BOS.Orm.DataEntity;
 using Kingdee.BOS.Rpc;
 using System;
@@ -85,12 +86,59 @@ namespace KEEPER.K3._3D.Contracts
         [FaultContract(typeof(ServiceFault))]
         List<SalOrderTransferList> getPurTransferData(Context ctx);
 
+
         /// <summary>
-        /// 更新中间表状态以及更新时间
+        /// 更新prtablein中间表状态以及更新时间。。。。。
         /// </summary>
         /// <param name="ctx"></param>
+        /// <param name="status">不同状态更新枚举</param>
+        /// <param name="ids">prtIDS</param>
+        /// <param name="uyList">更新数据包实体集合</param>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        void updateTableStatus(Context ctx,long[] ids,int status);
+        void updateTableStatus(Context ctx, UpdatePrtableinEnum status,long[] ids = null,List<UpdatePrtableEntity> uyList = null);
+
+        /// <summary>
+        /// 将错误信息插入错误信息表中
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="status">不同状态更新枚举</param>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        void insertErrorTable(Context ctx, UpdatePrtableinEnum status);
+
+        /// <summary>
+        /// 提交单据
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="FormID"></param>
+        /// <param name="ids"></param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        IOperationResult SubmitBill(Context ctx, string FormID, object[] ids);
+
+        /// <summary>
+        /// 审核单据
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="FormID"></param>
+        /// <param name="ids"></param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        IOperationResult AuditBill(Context ctx, string FormID, object[] ids);
+
+        /// <summary>
+        /// 组装更新数据包实体
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="status">不同场景的更新枚举</param>
+        /// <param name="trasferentry">调拨单更新的集合</param>
+        /// <param name="vo">错误更新的集合</param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, Object[] trasferentry = null,List<ValidationErrorInfo> vo = null);
     }
 }
