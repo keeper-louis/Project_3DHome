@@ -246,6 +246,30 @@ namespace KEEPER.K3.APP
            where Processtable.FBILLNO = Prtablein.id)");
                 DBUtils.Execute(ctx, strSql);
             }
+
+            if (status == UpdatePrtableinEnum.AuditError)
+            {
+                string strSql = string.Format(@"/*dialect*/insert into processtable
+  select Prtablein.id FBILLNO,
+         'A' FDOCUMENTSTATUS,
+         Prtablein.salenumber SALENUMBER,
+         Prtablein.linenumber LINENUMBER,
+         Prtablein.technicscode TECHNICSCODE,
+         Prtablein.id PRTABLEINID,
+         Prtablein.ferrormsg REASON,
+         Prtablein.state STATE,
+         Prtablein.fdate FDATE,
+         getdate() FSUBDATE
+    from Prtablein
+   where Prtablein.state = 3
+     and Prtablein.Ferrorstatus = 2
+     and Prtablein.status = 2
+     and not exists
+   (select 1
+            from Processtable
+           where Processtable.FBILLNO = Prtablein.id)");
+                DBUtils.Execute(ctx, strSql);
+            }
         }
 
         public DynamicObject installCostRequestPackage(Context ctx, string FormID, Action<IDynamicFormViewService> fillBillPropertys, string BillTypeId = "")
@@ -297,21 +321,25 @@ namespace KEEPER.K3.APP
             return billView.Model.DataObject;
         }
 
-        public List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, object[] trasferentry = null, List<ValidationErrorInfo> vo = null)
+        public List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null)
         {
             if (status == UpdatePrtableinEnum.AfterCreateModel)
             {
                 List<UpdatePrtableEntity> updatePrtList = new List<UpdatePrtableEntity>();
-                foreach (DynamicObjectCollection item in trasferentry)
+                foreach (DynamicObject item in trasferbill)
                 {
-                    foreach (var aa in item)
+                    long id = Convert.ToInt64(item["Id"]);
+                    string billno = item["BillNo"] != null ? Convert.ToString(item["BillNo"]) : "";
+                    foreach (DynamicObject aa in item["TransferDirectEntry"] as DynamicObjectCollection)
                     {
                         UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                        uy.k3cloudheadID = id;
+                        uy.billNo = billno;
                         uy.k3cloudID = Convert.ToInt64(aa["Id"]);
                         uy.prtID = Convert.ToInt32(aa["Fprtableinid"]);
-                        uy.salenumber = Convert.ToString(aa["Fsalenumber"]);
-                        uy.linenumber = Convert.ToString(aa["Flinenumber"]);
-                        uy.techcode = Convert.ToString(aa["Ftechcode"]);
+                       // uy.salenumber = Convert.ToString(aa["Fsalenumber"]);
+                       // uy.linenumber = Convert.ToString(aa["Flinenumber"]);
+                       // uy.techcode = Convert.ToString(aa["Ftechcode"]);
                         updatePrtList.Add(uy);
                     }
                 }
@@ -328,6 +356,23 @@ namespace KEEPER.K3.APP
                     updatePrtList.Add(uy);
                 }
                 return updatePrtList;
+            }
+            if (status == UpdatePrtableinEnum.AuditError)
+            {
+                UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                uy.k3cloudheadID = Convert.ToInt64(submitResult["Id"]);//pk
+                uy.errorMsg = Convert.ToString(submitResult["BillNo"]) + auditResult.InteractionContext.SimpleMessage;
+                exceptPrtList.Add(uy);
+                return exceptPrtList;
+            }
+            if (status ==UpdatePrtableinEnum.AuditSucess)
+            {
+                UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                object[] ids = (from c in auditResult.SuccessDataEnity
+                                select c[0]).ToArray();
+                uy.k3cloudheadID = Convert.ToInt64(ids[0]);//pk
+                exceptPrtList.Add(uy);
+                return exceptPrtList;
             }
             return null;
         }
@@ -416,15 +461,19 @@ namespace KEEPER.K3.APP
                 dt.TableName = "prtablein";
                 var idCol = dt.Columns.Add("id");
                 idCol.DataType = typeof(long);
-                var statusCol = dt.Columns.Add("fcloudid");
-                statusCol.DataType = typeof(long);
+                var cloudid = dt.Columns.Add("fcloudid");
+                idCol.DataType = typeof(long);
+                var cloudheadid = dt.Columns.Add("fcloudheadid");
+                cloudheadid.DataType = typeof(long);
+                var cloudbillno = dt.Columns.Add("fbillno");
+                cloudbillno.DataType = typeof(string);
                 var subdate = dt.Columns.Add("Fsubdate");
                 subdate.DataType = typeof(DateTime);
                 // 灌入测试数据
                 dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
                 foreach (var item in uyList)
                 {
-                    dt.LoadDataRow(new object[] { item.prtID, item.k3cloudID, DateTime.Now }, true);
+                    dt.LoadDataRow(new object[] { item.prtID, item.k3cloudID, item.k3cloudheadID,item.billNo,DateTime.Now }, true);
                 }
                 dt.EndLoadData();
                 // 准备批量更新服务参数
@@ -441,6 +490,14 @@ namespace KEEPER.K3.APP
                 // columnName: DataTable中的列名
                 // fieldName : 对应的物料表格字段名
                 batchUpdateParam.AddSetExpression("fcloudid", KDDbType.Int64, "fcloudid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("fbillno", KDDbType.String, "fbillno");
                 // 设置待更新的字段
                 // columnName: DataTable中的列名
                 // fieldName : 对应的物料表格字段名
@@ -492,6 +549,96 @@ namespace KEEPER.K3.APP
                 // columnName: DataTable中的列名
                 // fieldName : 对应的物料表格字段名
                 batchUpdateParam.AddSetExpression("ferrormsg", KDDbType.String, "ferrormsg");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+                // 执行批量更新
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+            }
+            if (status == UpdatePrtableinEnum.AuditError)
+            {
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                DataTable dt = new DataTable();
+                dt.TableName = "prtablein";
+                var idCol = dt.Columns.Add("fcloudheadid");
+                idCol.DataType = typeof(long);
+                var statusCol = dt.Columns.Add("status");
+                statusCol.DataType = typeof(int);
+                var errStatusCol = dt.Columns.Add("Ferrorstatus");
+                errStatusCol.DataType = typeof(int);
+                var errmsg = dt.Columns.Add("ferrormsg");
+                errmsg.DataType = typeof(string);
+                var subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                // 灌入测试数据
+                dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+                foreach (var item in uyList)
+                {
+                    dt.LoadDataRow(new object[] { item.k3cloudheadID, 2, 2, item.errorMsg, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                // 准备批量更新服务参数
+                // tableName : 待更新的物理表格名
+                // dt : 待更新的数据
+                BatchSqlParam batchUpdateParam = new BatchSqlParam("prtablein", dt);
+
+                // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+                // 匹配字段可以添加多个
+                // columnName: DataTable中的列名
+                // fieldName : 物料表格中匹配的字段名
+                batchUpdateParam.AddWhereExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Ferrorstatus", KDDbType.Int32, "Ferrorstatus");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("ferrormsg", KDDbType.String, "ferrormsg");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+                // 执行批量更新
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+            }
+            if (status == UpdatePrtableinEnum.AuditSucess)
+            {
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                DataTable dt = new DataTable();
+                dt.TableName = "prtablein";
+                var idCol = dt.Columns.Add("fcloudheadid");
+                idCol.DataType = typeof(long);
+                var statusCol = dt.Columns.Add("status");
+                statusCol.DataType = typeof(int);
+                var subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                // 灌入测试数据
+                dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+                foreach (var item in uyList)
+                {
+                    dt.LoadDataRow(new object[] { item.k3cloudheadID, 4, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                // 准备批量更新服务参数
+                // tableName : 待更新的物理表格名
+                // dt : 待更新的数据
+                BatchSqlParam batchUpdateParam = new BatchSqlParam("prtablein", dt);
+
+                // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+                // 匹配字段可以添加多个
+                // columnName: DataTable中的列名
+                // fieldName : 物料表格中匹配的字段名
+                batchUpdateParam.AddWhereExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
                 // 设置待更新的字段
                 // columnName: DataTable中的列名
                 // fieldName : 对应的物料表格字段名

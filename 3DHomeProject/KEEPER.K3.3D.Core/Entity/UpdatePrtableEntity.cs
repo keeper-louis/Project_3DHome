@@ -16,7 +16,17 @@ namespace KEEPER.K3._3D.Core.Entity
         public int prtID { get; set; }
 
         /// <summary>
-        /// k3cloud系统单据内码
+        /// k3cloud系统单据头内码
+        /// </summary>
+        public long k3cloudheadID { get; set; }
+
+        /// <summary>
+        /// k3cloud系统单据编号
+        /// </summary>
+        public string billNo { get; set; }
+
+        /// <summary>
+        /// k3cloud系统单据体内码
         /// </summary>
         public long k3cloudID { get; set; }
 

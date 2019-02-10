@@ -107,10 +107,10 @@ namespace KEEPER.K3._3D._3DServiceHelper
             return submitResult;
         }
 
-        public static List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, Object[] trasferentry = null, List<ValidationErrorInfo> vo = null)
+        public static List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            return service.InstallUpdatePackage(ctx, status, trasferentry, vo);
+            return service.InstallUpdatePackage(ctx, status, trasferbill, vo, exceptPrtList, auditResult, submitResult);
         }
 
     }
