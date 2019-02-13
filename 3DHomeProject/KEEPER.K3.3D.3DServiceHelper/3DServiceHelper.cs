@@ -54,16 +54,23 @@ namespace KEEPER.K3._3D._3DServiceHelper
             return saveResult;
         }
 
-        public static Boolean isTransfer(Context ctx)
+        public static Boolean isTransfer(Context ctx,UpdatePrtableinEnum status)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            return service.isTransfer(ctx);
+            return service.isTransfer(ctx,status);
         }
 
-        public static List<SalOrderTransferList> getPurTransferData(Context ctx)
+        public static List<SalOrderTransferList> getPurTransferData(Context ctx,UpdatePrtableinEnum status)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            return service.getPurTransferData(ctx);
+            return service.getPurTransferData(ctx,status);
+        }
+
+
+        public static List<UpdatePrtableEntity> getAuditErrorData(Context ctx, UpdatePrtableinEnum status)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.getAuditErrorData(ctx, status);
         }
 
         public static void updateTableStatus(Context ctx, UpdatePrtableinEnum status, long[] ids = null,List<UpdatePrtableEntity> uyList = null)
@@ -107,10 +114,10 @@ namespace KEEPER.K3._3D._3DServiceHelper
             return submitResult;
         }
 
-        public static List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null)
+        public static List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billno = "")
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            return service.InstallUpdatePackage(ctx, status, trasferbill, vo, exceptPrtList, auditResult, submitResult);
+            return service.InstallUpdatePackage(ctx, status, trasferbill, vo, exceptPrtList, auditResult, submitResult,k3cloudheadid,billno);
         }
 
     }

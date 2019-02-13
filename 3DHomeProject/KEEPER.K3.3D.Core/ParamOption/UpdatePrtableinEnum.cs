@@ -13,6 +13,7 @@ namespace KEEPER.K3._3D.Core.ParamOption
         SaveError = 2,//数据保存失败
         AuditError = 3,//数据审核失败
         SaveSucess = 4,//保存成功
-        AuditSucess = 5//审核成功
+        AuditSucess = 5,//审核成功
+        BeforeSave = 6//保存前
     }
 }

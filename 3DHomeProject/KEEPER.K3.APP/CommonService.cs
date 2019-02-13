@@ -34,6 +34,7 @@ namespace KEEPER.K3.APP
 {
     public class CommonService : ICommonService
     {
+        #region 审核
         public IOperationResult AuditBill(Context ctx, string FormID, object[] ids)
         {
             IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();//元数据服务
@@ -44,7 +45,9 @@ namespace KEEPER.K3.APP
             IOperationResult AuditResult = BusinessDataServiceHelper.Audit(ctx, Meta.BusinessInfo, ids, AuditOption);
             return AuditResult;
         }
+        #endregion
 
+        #region 批量保存
         public IOperationResult BatchSaveBill(Context ctx, string FormID, DynamicObject[] dyObject)
         {
             IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();//元数据服务
@@ -53,10 +56,12 @@ namespace KEEPER.K3.APP
             IOperationResult SaveResult = BusinessDataServiceHelper.Save(ctx, Meta.BusinessInfo, dyObject, SaveOption, "Save");
             return SaveResult;
         }
+        #endregion
 
+        #region 下推
         public DynamicObject[] ConvertBills(Context ctx, ConvertOption option)
         {
-            IEnumerable<DynamicObject> targetDatas = null;
+            //IEnumerable<DynamicObject> targetDatas = null;
             IConvertService convertService = ServiceHelper.GetService<IConvertService>();
             var rules = convertService.GetConvertRules(ctx, option.SourceFormId, option.TargetFormId);
             if (rules == null || rules.Count == 0)
@@ -162,18 +167,61 @@ namespace KEEPER.K3.APP
             return targetBillObjs;
         }
 
-        public List<SalOrderTransferList> getPurTransferData(Context ctx)
+        #endregion
+
+        #region 获取审核失败数据集合
+        public List<UpdatePrtableEntity> getAuditErrorData(Context ctx, UpdatePrtableinEnum status)
         {
-            string strDateSql = string.Format(@"/*dialect*/select distinct prtIn.fdate from prtablein prtIn where prtIn.state = 3 and prtIn.status = 3 and prtIn.ferrorstatus <> 2");
-            DynamicObjectCollection dateData= DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
-            if (dateData.Count()>0)
+            if (status == UpdatePrtableinEnum.AuditError)
             {
-                List<SalOrderTransferList> list = new List<SalOrderTransferList>();
-                foreach (DynamicObject dateCol in dateData)
+                string strDateSql = string.Format(@"/*dialect*/select distinct prtIn.fdate from prtablein prtIn where prtIn.state = 3 and prtIn.status = 3 and prtIn.ferrorstatus = 2");
+                DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
+                if (dateData.Count() > 0)
                 {
-                    SalOrderTransferList sallist = new SalOrderTransferList();
-                    sallist.BusinessDate = Convert.ToDateTime(dateCol["fdate"]);
-                    string strSql = string.Format(@"/*dialect*/select prtIn.fdate,
+                        string strSql = string.Format(@"/*dialect*/select distinct prtIn.fcloudheadid,prtIn.fbillno
+  from prtablein prtIn
+ where prtIn.state = 3
+   and prtIn.status = 3
+   and prtIn.ferrorstatus = 2");
+                        DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
+                        List<UpdatePrtableEntity> uPrtabEntity = new List<UpdatePrtableEntity>();
+                        foreach (DynamicObject purTransferData in PurTransferData)
+                        {
+                            UpdatePrtableEntity salEntryData = new UpdatePrtableEntity();
+                            salEntryData.k3cloudheadID = Convert.ToInt64(purTransferData["fcloudheadid"]);
+                            salEntryData.billNo = Convert.ToString(purTransferData["fbillno"]);
+                            uPrtabEntity.Add(salEntryData);
+                        }
+                    
+                    return uPrtabEntity;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
+        #endregion
+
+        #region 获取除审核失败其余采购件调拨单数据
+        public List<SalOrderTransferList> getPurTransferData(Context ctx,UpdatePrtableinEnum status)
+        {
+            if (status == UpdatePrtableinEnum.BeforeSave)
+            {
+                string strDateSql = string.Format(@"/*dialect*/select distinct prtIn.fdate from prtablein prtIn where prtIn.state = 3 and prtIn.status = 3 and prtIn.ferrorstatus <> 2");
+                DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
+                if (dateData.Count() > 0)
+                {
+                    List<SalOrderTransferList> list = new List<SalOrderTransferList>();
+                    foreach (DynamicObject dateCol in dateData)
+                    {
+                        SalOrderTransferList sallist = new SalOrderTransferList();
+                        sallist.BusinessDate = Convert.ToDateTime(dateCol["fdate"]);
+                        string strSql = string.Format(@"/*dialect*/select prtIn.fdate,
        prtIn.id,
        prtIn.salenumber,
        prtIn.linenumber,
@@ -193,34 +241,43 @@ namespace KEEPER.K3.APP
     on salorder.fid = orderentry.fid
    and prtIn.linenumber = orderentry.fseq
  where prtIn.fdate = '{0}'", Convert.ToDateTime(dateCol["fdate"]));
-                    DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
-                    List<SalOrderTransfer> salEntryDataList = new List<SalOrderTransfer>();
-                    foreach (DynamicObject purTransferData in PurTransferData)
-                    {
-                        SalOrderTransfer salEntryData = new SalOrderTransfer();
-                        salEntryData.prtID = Convert.ToInt64(purTransferData["id"]);
-                        salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
-                        salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
-                        salEntryData.lineNumber = Convert.ToString(purTransferData["linenumber"]);
-                        salEntryData.technicsCode = Convert.ToString(purTransferData["technicscode"]);
-                        salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
-                        salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
-                        salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
-                        salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
-                        salEntryData.stocknumber = Convert.ToString(purTransferData["Fstockid"]);
-                        salEntryDataList.Add(salEntryData);
+                        DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
+                        List<SalOrderTransfer> salEntryDataList = new List<SalOrderTransfer>();
+                        foreach (DynamicObject purTransferData in PurTransferData)
+                        {
+                            SalOrderTransfer salEntryData = new SalOrderTransfer();
+                            salEntryData.prtID = Convert.ToInt64(purTransferData["id"]);
+                            salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
+                            salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
+                            salEntryData.lineNumber = Convert.ToString(purTransferData["linenumber"]);
+                            salEntryData.technicsCode = Convert.ToString(purTransferData["technicscode"]);
+                            salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
+                            salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
+                            salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
+                            salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                            salEntryData.stocknumber = Convert.ToString(purTransferData["Fstockid"]);
+                            salEntryDataList.Add(salEntryData);
+                        }
+                        sallist.salOrderTransfer = salEntryDataList;
+                        list.Add(sallist);
                     }
-                    sallist.salOrderTransfer = salEntryDataList;
-                    list.Add(sallist);
+                    return list;
                 }
-                return list;
+                else
+                {
+                    return null;
+                }
             }
             else
             {
                 return null;
             }
+            
         }
 
+        #endregion
+
+        #region 错误信息表插入
         public void insertErrorTable(Context ctx, UpdatePrtableinEnum status)
         {
             if (status == UpdatePrtableinEnum.SaveError)
@@ -272,6 +329,9 @@ namespace KEEPER.K3.APP
             }
         }
 
+        #endregion
+
+        #region 构建单据数据包
         public DynamicObject installCostRequestPackage(Context ctx, string FormID, Action<IDynamicFormViewService> fillBillPropertys, string BillTypeId = "")
         {
             FormMetadata Meta = MetaDataServiceHelper.Load(ctx, FormID) as FormMetadata;//获取元数据
@@ -320,8 +380,10 @@ namespace KEEPER.K3.APP
             }
             return billView.Model.DataObject;
         }
+        #endregion
 
-        public List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null)
+        #region 构建更新数据包集合
+        public List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billnos = "")
         {
             if (status == UpdatePrtableinEnum.AfterCreateModel)
             {
@@ -359,11 +421,23 @@ namespace KEEPER.K3.APP
             }
             if (status == UpdatePrtableinEnum.AuditError)
             {
-                UpdatePrtableEntity uy = new UpdatePrtableEntity();
-                uy.k3cloudheadID = Convert.ToInt64(submitResult["Id"]);//pk
-                uy.errorMsg = Convert.ToString(submitResult["BillNo"]) + auditResult.InteractionContext.SimpleMessage;
-                exceptPrtList.Add(uy);
-                return exceptPrtList;
+                if (submitResult!=null)
+                {
+                    UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                    uy.k3cloudheadID = Convert.ToInt64(submitResult["Id"]);//pk
+                    uy.errorMsg = Convert.ToString(submitResult["BillNo"]) + auditResult.InteractionContext.SimpleMessage;
+                    exceptPrtList.Add(uy);
+                    return exceptPrtList;
+                }
+                else
+                {
+                    UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                    uy.k3cloudheadID = k3cloudheadid;
+                    uy.errorMsg = billnos + auditResult.InteractionContext.SimpleMessage;
+                    exceptPrtList.Add(uy);
+                    return exceptPrtList;
+                }
+                
             }
             if (status ==UpdatePrtableinEnum.AuditSucess)
             {
@@ -376,23 +450,49 @@ namespace KEEPER.K3.APP
             }
             return null;
         }
+        #endregion
 
-        public bool isTransfer(Context ctx)
+        #region 判断是否有未处理过的采购件调拨数据
+        public bool isTransfer(Context ctx,UpdatePrtableinEnum status)
         {
-            //[采购件]and[预检完成]and[处理错误状态不等于审核]的数据
-            string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 3 and status = 3 and ferrorstatus <> 2");
-            int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
-            if (amount==0)
+            if (status == UpdatePrtableinEnum.BeforeSave)
             {
-                return false;
+                //[采购件]and[预检完成]and[处理错误状态不等于审核]的数据
+                string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 3 and status = 3 and ferrorstatus <> 2");
+                int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
+                if (amount == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else if (status == UpdatePrtableinEnum.AuditError)
+            {
+                //[采购件]and[预检完成]and[处理错误状态等于审核]的数据
+                string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 3 and status = 3 and ferrorstatus = 2");
+                int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
+                if (amount == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
             }
             else
             {
-                return true;
+                return false;
             }
             
+            
         }
+        #endregion
 
+        #region 单个保存
         public IOperationResult SaveBill(Context ctx, string FormID, DynamicObject dyObject)
         {
             IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();//元数据服务
@@ -402,7 +502,9 @@ namespace KEEPER.K3.APP
             //BusinessDataServiceHelper.Save()
             return SaveResult;
         }
+        #endregion
 
+        #region 提交
         public IOperationResult SubmitBill(Context ctx, string FormID, object[] ids)
         {
             IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();//元数据服务
@@ -411,8 +513,9 @@ namespace KEEPER.K3.APP
             IOperationResult submitResult = BusinessDataServiceHelper.Submit(ctx, Meta.BusinessInfo, ids, "Submit", submitOption);
             return submitResult;
         }
+        #endregion
 
-        
+        #region 更新prtablein表
         public void updateTableStatus(Context ctx, UpdatePrtableinEnum status,long[] ids = null,List<UpdatePrtableEntity> uyList = null)
         {
             if (status == UpdatePrtableinEnum.AfterGetDate)
@@ -647,6 +750,8 @@ namespace KEEPER.K3.APP
                 Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
             }
         }
+        #endregion
+
 
         /// <summary>
         /// 判断操作结果是否成功，如果不成功，则直接抛错中断进程

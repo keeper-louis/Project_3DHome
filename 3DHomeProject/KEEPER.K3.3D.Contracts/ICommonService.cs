@@ -75,7 +75,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        Boolean isTransfer(Context ctx);
+        Boolean isTransfer(Context ctx,UpdatePrtableinEnum status);
 
         /// <summary>
         /// 获取采购调拨数据
@@ -84,7 +84,17 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        List<SalOrderTransferList> getPurTransferData(Context ctx);
+        List<SalOrderTransferList> getPurTransferData(Context ctx,UpdatePrtableinEnum status);
+
+        /// <summary>
+        /// 获取审核失败数据集合
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="status">业务状态码</param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        List<UpdatePrtableEntity> getAuditErrorData(Context ctx, UpdatePrtableinEnum status);
 
 
         /// <summary>
@@ -139,6 +149,6 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null,List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null,DynamicObject submitResult = null);
+        List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null,List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null,DynamicObject submitResult = null,long k3cloudheadid = 0,string billno = "");
     }
 }
