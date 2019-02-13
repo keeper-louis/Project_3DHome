@@ -164,7 +164,7 @@ namespace KEEPER.K3.APP
 
         public List<SalOrderTransferList> getPurTransferData(Context ctx)
         {
-            string strDateSql = string.Format(@"/*dialect*/select distinct prtIn.fdate from prtablein prtIn where prtIn.state = 3 and prtIn.status = 3 and prtIn.ferrorstatus <> 1");
+            string strDateSql = string.Format(@"/*dialect*/select distinct prtIn.fdate from prtablein prtIn where prtIn.state = 3 and prtIn.status = 3 and prtIn.ferrorstatus <> 2");
             DynamicObjectCollection dateData= DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
             if (dateData.Count()>0)
             {
@@ -188,7 +188,7 @@ namespace KEEPER.K3.APP
     on prtIn.salenumber = salorder.fbillno
    and prtIn.state = 3
    and prtIn.status = 3
-   and prtIn.ferrorstatus <> 1
+   and prtIn.ferrorstatus <> 2
  inner join t_sal_orderentry orderentry
     on salorder.fid = orderentry.fid
    and prtIn.linenumber = orderentry.fseq
@@ -380,7 +380,7 @@ namespace KEEPER.K3.APP
         public bool isTransfer(Context ctx)
         {
             //[采购件]and[预检完成]and[处理错误状态不等于审核]的数据
-            string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 3 and status = 3 and ferrorstatus <> 1");
+            string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 3 and status = 3 and ferrorstatus <> 2");
             int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
             if (amount==0)
             {
