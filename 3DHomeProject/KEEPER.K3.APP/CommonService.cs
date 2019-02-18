@@ -61,11 +61,14 @@ namespace KEEPER.K3.APP
         #region 获取工序计划下推数据集合
         public List<ConvertOption> getOLAPushData(Context ctx, ObjectEnum Obstatus)
         {
-            if (Obstatus == ObjectEnum.OPLAQual)
+            string tableName = string.Empty;
+            try
             {
-                string createSql = "create table {0}(FID INT, FDETAILID decimal(23, 10), amount decimal(23, 10))";
-                string tableName = CreateTempTalbe(ctx, createSql);
-                string strSqlAll = string.Format(@"/*dialect*/insert into {0} select ola.FID, odeatil.FDETAILID, sum(prtIn.amount) amount
+                if (Obstatus == ObjectEnum.OPLAQual)
+                {
+                    string createSql = "create table {0}(FID INT, FDETAILID decimal(23, 10), amount decimal(23, 10))";
+                    tableName = CreateTempTalbe(ctx, createSql);
+                    string strSqlAll = string.Format(@"/*dialect*/insert into {0} select ola.FID, odeatil.FDETAILID, sum(prtIn.amount) amount
   from prtablein prtIn
  inner join T_SFC_OPERPLANNING ola
     on prtIn.salenumber = ola.FSALEORDERNUMBER
@@ -76,8 +79,8 @@ namespace KEEPER.K3.APP
  where prtIn.state = 0
    and prtIn.status = 3
    and prtIn.Ferrorstatus <> 2
- group by ola.FID, odeatil.FDETAILID",tableName);
-                string strSql = string.Format(@"/*dialect*/select distinct top 1000 ola.FID
+ group by ola.FID, odeatil.FDETAILID", tableName);
+                    string strSql = string.Format(@"/*dialect*/select distinct top 1000 ola.FID
   from prtablein prtIn
  inner join T_SFC_OPERPLANNING ola
     on prtIn.salenumber = ola.FSALEORDERNUMBER
@@ -89,33 +92,45 @@ namespace KEEPER.K3.APP
    and prtIn.status = 3
    and prtIn.Ferrorstatus <> 2
  group by ola.FID, odeatil.FDETAILID");
-                DynamicObjectCollection OlaPustCol = DBUtils.ExecuteDynamicObject(ctx, strSql);
-                List<ConvertOption> OlaData = new List<ConvertOption>();
-                foreach (DynamicObject item in OlaPustCol)
-                {
-                    ConvertOption option = new ConvertOption();
-                    string strSqlOption = string.Format(@"select * from {0} where FID = {1}", tableName, Convert.ToInt64(item["FID"]));
-                    DynamicObjectCollection dcl = DBUtils.ExecuteDynamicObject(ctx, strSqlOption);
-                    List<long> sourceBillIds = new List<long>();
-                    sourceBillIds.Add(Convert.ToInt64(item["FID"]));
-                    option.SourceBillIds = sourceBillIds;
-                    List<long> sourceBillEntryIds = new List<long>();
-                    List<int> mount = new List<int>();
-                    foreach (DynamicObject dc in dcl)
+                    DynamicObjectCollection OlaPustCol = DBUtils.ExecuteDynamicObject(ctx, strSql);
+                    List<ConvertOption> OlaData = new List<ConvertOption>();
+                    foreach (DynamicObject item in OlaPustCol)
                     {
-                        sourceBillEntryIds.Add(Convert.ToInt64(dc["FDETAILID"]));
-                        mount.Add(Convert.ToInt32(dc["amount"]));
+                        ConvertOption option = new ConvertOption();
+                        string strSqlOption = string.Format(@"select * from {0} where FID = {1}", tableName, Convert.ToInt64(item["FID"]));
+                        DynamicObjectCollection dcl = DBUtils.ExecuteDynamicObject(ctx, strSqlOption);
+                        List<long> sourceBillIds = new List<long>();
+                        sourceBillIds.Add(Convert.ToInt64(item["FID"]));
+                        option.SourceBillIds = sourceBillIds;
+                        List<long> sourceBillEntryIds = new List<long>();
+                        List<int> mount = new List<int>();
+                        foreach (DynamicObject dc in dcl)
+                        {
+                            sourceBillEntryIds.Add(Convert.ToInt64(dc["FDETAILID"]));
+                            mount.Add(Convert.ToInt32(dc["amount"]));
+                        }
+                        option.SourceBillEntryIds = sourceBillEntryIds;
+                        option.mount = mount;
+                        OlaData.Add(option);
                     }
-                    option.SourceBillEntryIds = sourceBillEntryIds;
-                    option.mount = mount;
-                    OlaData.Add(option);
+                    return OlaData;
                 }
-                return OlaData;
+                else
+                {
+                    return null;
+                }
             }
-            else
+            catch (Exception)
             {
-                return null;
+
+                throw;
             }
+            finally
+            {
+                string dropSql = string.Format(@"/*dialect*/drop table {0}", tableName);
+                DBUtils.Execute(ctx, dropSql);
+            }
+            
         }
         #endregion
 
