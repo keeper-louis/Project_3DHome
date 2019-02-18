@@ -77,6 +77,7 @@ namespace KEEPER.K3.APP
    and prtIn.status = 3
    and prtIn.Ferrorstatus <> 2
  group by ola.FID, odeatil.FDETAILID",tableName);
+                DBUtils.Execute(ctx, strSqlAll);
                 string strSql = string.Format(@"/*dialect*/select distinct top 1000 ola.FID
   from prtablein prtIn
  inner join T_SFC_OPERPLANNING ola
