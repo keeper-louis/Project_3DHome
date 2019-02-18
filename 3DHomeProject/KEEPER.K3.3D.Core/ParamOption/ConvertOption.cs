@@ -39,5 +39,10 @@ namespace KEEPER.K3._3D.Core.ParamOption
         /// 源单明细实体key
         /// </summary>
         public string SourceEntryEntityKey { get; set; }
+
+        /// <summary>
+        /// 合格或不合格数量
+        /// </summary>
+        public List<int> mount { get; set; }
     }
 }

@@ -19,10 +19,10 @@ namespace KEEPER.K3._3D._3DServiceHelper
     /// </summary>
     public class _3DServiceHelper
     {
-        public static DynamicObject[] ConvertBills(Context ctx, ConvertOption option)
+        public static List<DynamicObject[]> ConvertBills(Context ctx, List<ConvertOption> option,string SourceFormId,string TargetFormId,string SourceEntryEntityKey)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            DynamicObject[] targetDatas = service.ConvertBills(ctx, option);
+            List<DynamicObject[]> targetDatas = service.ConvertBills(ctx, option,SourceFormId,TargetFormId,SourceEntryEntityKey);
             return targetDatas;
         }
 
@@ -54,16 +54,22 @@ namespace KEEPER.K3._3D._3DServiceHelper
             return saveResult;
         }
 
-        public static Boolean isTransfer(Context ctx,UpdatePrtableinEnum status)
+        public static Boolean isTransfer(Context ctx,ObjectEnum Obstatus,UpdatePrtableinEnum status)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            return service.isTransfer(ctx,status);
+            return service.isTransfer(ctx, Obstatus,status);
         }
 
         public static List<SalOrderTransferList> getPurTransferData(Context ctx,UpdatePrtableinEnum status)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
             return service.getPurTransferData(ctx,status);
+        }
+
+        public static List<ConvertOption> getOLAPushData(Context ctx, ObjectEnum status)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.getOLAPushData(ctx, status);
         }
 
 

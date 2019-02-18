@@ -58,15 +58,77 @@ namespace KEEPER.K3.APP
         }
         #endregion
 
-        #region 下推
-        public DynamicObject[] ConvertBills(Context ctx, ConvertOption option)
+        #region 获取工序计划下推数据集合
+        public List<ConvertOption> getOLAPushData(Context ctx, ObjectEnum Obstatus)
         {
+            if (Obstatus == ObjectEnum.OPLAQual)
+            {
+                string createSql = "create table {0}(FID INT, FDETAILID decimal(23, 10), amount decimal(23, 10))";
+                string tableName = CreateTempTalbe(ctx, createSql);
+                string strSqlAll = string.Format(@"/*dialect*/insert into {0} select ola.FID, odeatil.FDETAILID, sum(prtIn.amount) amount
+  from prtablein prtIn
+ inner join T_SFC_OPERPLANNING ola
+    on prtIn.salenumber = ola.FSALEORDERNUMBER
+   and prtIn.linenumber = ola.FSALEORDERENTRYSEQ
+ inner join T_SFC_OPERPLANNINGDETAIL odeatil
+    on odeatil.FENTRYID = ola.FID
+   and prtIn.Technicscode = odeatil.FOPERNUMBER
+ where prtIn.state = 0
+   and prtIn.status = 3
+   and prtIn.Ferrorstatus <> 2
+ group by ola.FID, odeatil.FDETAILID",tableName);
+                string strSql = string.Format(@"/*dialect*/select distinct top 1000 ola.FID
+  from prtablein prtIn
+ inner join T_SFC_OPERPLANNING ola
+    on prtIn.salenumber = ola.FSALEORDERNUMBER
+   and prtIn.linenumber = ola.FSALEORDERENTRYSEQ
+ inner join T_SFC_OPERPLANNINGDETAIL odeatil
+    on odeatil.FENTRYID = ola.FID
+   and prtIn.Technicscode = odeatil.FOPERNUMBER
+ where prtIn.state = 0
+   and prtIn.status = 3
+   and prtIn.Ferrorstatus <> 2
+ group by ola.FID, odeatil.FDETAILID");
+                DynamicObjectCollection OlaPustCol = DBUtils.ExecuteDynamicObject(ctx, strSql);
+                List<ConvertOption> OlaData = new List<ConvertOption>();
+                foreach (DynamicObject item in OlaPustCol)
+                {
+                    ConvertOption option = new ConvertOption();
+                    string strSqlOption = string.Format(@"select * from {0} where FID = {1}", tableName, Convert.ToInt64(item["FID"]));
+                    DynamicObjectCollection dcl = DBUtils.ExecuteDynamicObject(ctx, strSqlOption);
+                    List<long> sourceBillIds = new List<long>();
+                    sourceBillIds.Add(Convert.ToInt64(item["FID"]));
+                    option.SourceBillIds = sourceBillIds;
+                    List<long> sourceBillEntryIds = new List<long>();
+                    List<int> mount = new List<int>();
+                    foreach (DynamicObject dc in dcl)
+                    {
+                        sourceBillEntryIds.Add(Convert.ToInt64(dc["FDETAILID"]));
+                        mount.Add(Convert.ToInt32(dc["amount"]));
+                    }
+                    option.SourceBillEntryIds = sourceBillEntryIds;
+                    option.mount = mount;
+                    OlaData.Add(option);
+                }
+                return OlaData;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        #endregion
+
+        #region 下推
+        public List<DynamicObject[]> ConvertBills(Context ctx, List<ConvertOption> options,string SourceFormId,string TargetFormId,string SourceEntryEntityKey)
+        {
+            List<DynamicObject[]> result = new List<DynamicObject[]>();
             //IEnumerable<DynamicObject> targetDatas = null;
             IConvertService convertService = ServiceHelper.GetService<IConvertService>();
-            var rules = convertService.GetConvertRules(ctx, option.SourceFormId, option.TargetFormId);
+            var rules = convertService.GetConvertRules(ctx, SourceFormId, TargetFormId);
             if (rules == null || rules.Count == 0)
             {
-                throw new KDBusinessException("", string.Format("未找到{0}到{1}之间，启用的转换规则，无法自动下推！", option.SourceFormId, option.TargetFormId));
+                throw new KDBusinessException("", string.Format("未找到{0}到{1}之间，启用的转换规则，无法自动下推！", SourceFormId, TargetFormId));
             }
             // 取勾选了默认选项的规则
             var rule = rules.FirstOrDefault(t => t.IsDefault);
@@ -75,96 +137,112 @@ namespace KEEPER.K3.APP
             {
                 rule = rules[0];
             }
-            // 开始构建下推参数：
-            // 待下推的源单数据行
-            List<ListSelectedRow> srcSelectedRows = new List<ListSelectedRow>();
-            Dictionary<long, List<Tuple<string, int>>> dic = new Dictionary<long, List<Tuple<string, int>>>();
-            foreach (long billId in option.SourceBillIds)
+            foreach (ConvertOption option in options)
             {
-                srcSelectedRows = new List<ListSelectedRow>();
-                int rowKey = -1;
-                // 把待下推的源单内码，逐个创建ListSelectedRow对象，添加到集合中
-                //srcSelectedRows.Add(new ListSelectedRow(billId.ToString(), string.Empty, 0, option.SourceFormId));
-                // 特别说明：上述代码，是整单下推；
-                // 如果需要指定待下推的单据体行，请参照下句代码，在ListSelectedRow中，指定EntryEntityKey以及EntryId
-                foreach (long billEntryId in option.SourceBillEntryIds)
+                // 开始构建下推参数：
+                // 待下推的源单数据行
+                List<ListSelectedRow> srcSelectedRows = new List<ListSelectedRow>();
+                Dictionary<long, List<Tuple<string, int>>> dic = new Dictionary<long, List<Tuple<string, int>>>();
+                foreach (long billId in option.SourceBillIds)
                 {
-                    //srcSelectedRows.Add(new ListSelectedRow(billId.ToString(), billEntryId.ToString(), rowKey++, option.SourceFormId) { EntryEntityKey = option.SourceEntryEntityKey });
-                    ListSelectedRow row = new ListSelectedRow(billId.ToString(), billEntryId.ToString(), rowKey++, option.SourceFormId);
-                    row.EntryEntityKey = option.SourceEntryEntityKey;
-                    Dictionary<string, string> fieldValues = new Dictionary<string, string>();
-                    fieldValues.Add(option.SourceEntryEntityKey,billEntryId.ToString());
-                    row.FieldValues = fieldValues;
-                    srcSelectedRows.Add(row);
-                    if (rowKey == 1)
-                    {
-                        dic.Add(billEntryId, new List<Tuple<string, int>> { new Tuple<string, int>(" ", 3) });
-                    }
-                    else
-                    {
-                        dic.Add(billEntryId, new List<Tuple<string, int>> { new Tuple<string, int>(" ", 1) });
-                    }
-                    
-                } 
-            }
-            // 指定目标单单据类型:情况比较复杂，直接留空，会下推到默认的单据类型
-            string targetBillTypeId = string.Empty;
-            // 指定目标单据主业务组织：情况更加复杂，
-            // 建议在转换规则中，配置好主业务组织字段的映射关系：运行时，由系统根据映射关系，自动从上游单据取主业务组织，避免由插件指定
-            long targetOrgId = 0;
-            // 自定义参数字典：把一些自定义参数，传递到转换插件中；转换插件再根据这些参数，进行特定处理
-            Dictionary<string, object> custParams = new Dictionary<string, object>();
-            //custParams.Add("1", 1);
-            //custParams.Add("2", 2);
-            // 组装下推参数对象
-            PushArgs pushArgs = new PushArgs(rule, srcSelectedRows.ToArray())
-            {
-                TargetBillTypeId = targetBillTypeId,
-                TargetOrgId = targetOrgId,
-                CustomParams = custParams
-            };
-            // 调用下推服务，生成下游单据数据包
-            OperateOption option1 = OperateOption.Create();
-            option1.SetVariableValue(BOSConst.CST_ConvertValidatePermission, false);
-            option1.SetVariableValue("OpQtydic", dic);
-            option1.SetVariableValue("IsScanning", true);
-            ConvertOperationResult operationResult = convertService.Push(ctx, pushArgs, option1);
-            //targetDatas = convertService.Push(ctx, pushArgs, OperateOption.Create()).TargetDataEntities
-              //  .Select(s => s.DataEntity);
-            // 开始处理下推结果:
-            // 获取下推生成的下游单据数据包
-            DynamicObject[] targetBillObjs = (from p in operationResult.TargetDataEntities select p.DataEntity).ToArray();
-            if (targetBillObjs.Length == 0)
-            {
-                // 未下推成功目标单，抛出错误，中断审核
-                throw new KDBusinessException("", string.Format("由{0}自动下推{1}，没有成功生成数据包，自动下推失败！", option.SourceFormId, option.TargetFormId));
-            }
-            // 对下游单据数据包，进行适当的修订，以避免关键字段为空，自动保存失败
-            // 示例代码略
-            // 读取目标单据元数据
-            IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();
-            var targetBillMeta = metaService.Load(ctx, option.TargetFormId) as FormMetadata;
-            // 构建保存操作参数：设置操作选项值，忽略交互提示
-            OperateOption saveOption = OperateOption.Create();
-            // 忽略全部需要交互性质的提示，直接保存；
-            //saveOption.SetIgnoreWarning(true);              // 忽略交互提示
-            //saveOption.SetInteractionFlag(this.Option.GetInteractionFlag());        // 如果有交互，传入用户选择的交互结果
-            // using Kingdee.BOS.Core.Interaction;
-            //saveOption.SetIgnoreInteractionFlag(this.Option.GetIgnoreInteractionFlag());
+                    srcSelectedRows = new List<ListSelectedRow>();
+                    int rowKey = -1;
+                    // 把待下推的源单内码，逐个创建ListSelectedRow对象，添加到集合中
+                    //srcSelectedRows.Add(new ListSelectedRow(billId.ToString(), string.Empty, 0, option.SourceFormId));
+                    // 特别说明：上述代码，是整单下推；
+                    // 如果需要指定待下推的单据体行，请参照下句代码，在ListSelectedRow中，指定EntryEntityKey以及EntryId
+                    //foreach (long billEntryId in option.SourceBillEntryIds)
+                    //{
+                    //    //srcSelectedRows.Add(new ListSelectedRow(billId.ToString(), billEntryId.ToString(), rowKey++, option.SourceFormId) { EntryEntityKey = option.SourceEntryEntityKey });
+                    //    ListSelectedRow row = new ListSelectedRow(billId.ToString(), billEntryId.ToString(), rowKey++, SourceFormId);
+                    //    row.EntryEntityKey = SourceEntryEntityKey;
+                    //    Dictionary<string, string> fieldValues = new Dictionary<string, string>();
+                    //    fieldValues.Add(SourceEntryEntityKey, billEntryId.ToString());
+                    //    row.FieldValues = fieldValues;
+                    //    srcSelectedRows.Add(row);
+                    //    dic.Add(billEntryId, new List<Tuple<string, int>> { new Tuple<string, int>(" ", ) })
+                    //    if (rowKey == 1)
+                    //    {
+                    //        dic.Add(billEntryId, new List<Tuple<string, int>> { new Tuple<string, int>(" ", 3) });
+                    //    }
+                    //    else
+                    //    {
+                    //        dic.Add(billEntryId, new List<Tuple<string, int>> { new Tuple<string, int>(" ", 1) });
+                    //    }
 
-            //// 如下代码，强制要求忽略交互提示(演示案例不需要，注释掉)
-            saveOption.SetIgnoreWarning(true);
-            //// using Kingdee.BOS.Core.Interaction;
-            saveOption.SetIgnoreInteractionFlag(true);
-            // 调用保存服务，自动保存
-            ISaveService saveService = ServiceHelper.GetService<ISaveService>();
-            var saveResult = saveService.Save(ctx, targetBillMeta.BusinessInfo, targetBillObjs, saveOption, "Save");
-            // 判断自动保存结果：只有操作成功，才会继续
-            if (this.CheckOpResult(saveResult, saveOption))
-            {
-                //return;
+                    //}
+                    for (int i = 0; i < option.SourceBillEntryIds.Count(); i++)
+                    {
+                        ListSelectedRow row = new ListSelectedRow(billId.ToString(), option.SourceBillEntryIds[i].ToString(), rowKey++, SourceFormId);
+                        row.EntryEntityKey = SourceEntryEntityKey;
+                        Dictionary<string, string> fieldValues = new Dictionary<string, string>();
+                        fieldValues.Add(SourceEntryEntityKey, option.SourceBillEntryIds[i].ToString());
+                        row.FieldValues = fieldValues;
+                        srcSelectedRows.Add(row);
+                        dic.Add(option.SourceBillEntryIds[i], new List<Tuple<string, int>> { new Tuple<string, int>(" ", option.mount[0]) });
+                    }
+                }
+                // 指定目标单单据类型:情况比较复杂，直接留空，会下推到默认的单据类型
+                string targetBillTypeId = string.Empty;
+                // 指定目标单据主业务组织：情况更加复杂，
+                // 建议在转换规则中，配置好主业务组织字段的映射关系：运行时，由系统根据映射关系，自动从上游单据取主业务组织，避免由插件指定
+                long targetOrgId = 0;
+                // 自定义参数字典：把一些自定义参数，传递到转换插件中；转换插件再根据这些参数，进行特定处理
+                Dictionary<string, object> custParams = new Dictionary<string, object>();
+                //custParams.Add("1", 1);
+                //custParams.Add("2", 2);
+                // 组装下推参数对象
+                PushArgs pushArgs = new PushArgs(rule, srcSelectedRows.ToArray())
+                {
+                    TargetBillTypeId = targetBillTypeId,
+                    TargetOrgId = targetOrgId,
+                    CustomParams = custParams
+                };
+                // 调用下推服务，生成下游单据数据包
+                OperateOption option1 = OperateOption.Create();
+                option1.SetVariableValue(BOSConst.CST_ConvertValidatePermission, false);
+                option1.SetVariableValue("OpQtydic", dic);
+                option1.SetVariableValue("IsScanning", true);
+                ConvertOperationResult operationResult = convertService.Push(ctx, pushArgs, option1);
+                //targetDatas = convertService.Push(ctx, pushArgs, OperateOption.Create()).TargetDataEntities
+                //  .Select(s => s.DataEntity);
+                // 开始处理下推结果:
+                // 获取下推生成的下游单据数据包
+                DynamicObject[] targetBillObjs = (from p in operationResult.TargetDataEntities select p.DataEntity).ToArray();
+                if (targetBillObjs.Length == 0)
+                {
+                    // 未下推成功目标单，抛出错误，中断审核
+                    throw new KDBusinessException("", string.Format("由{0}自动下推{1}，没有成功生成数据包，自动下推失败！", option.SourceFormId, option.TargetFormId));
+                }
+                // 对下游单据数据包，进行适当的修订，以避免关键字段为空，自动保存失败
+                // 示例代码略
+                // 读取目标单据元数据
+                IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();
+                var targetBillMeta = metaService.Load(ctx, option.TargetFormId) as FormMetadata;
+                // 构建保存操作参数：设置操作选项值，忽略交互提示
+                OperateOption saveOption = OperateOption.Create();
+                // 忽略全部需要交互性质的提示，直接保存；
+                //saveOption.SetIgnoreWarning(true);              // 忽略交互提示
+                //saveOption.SetInteractionFlag(this.Option.GetInteractionFlag());        // 如果有交互，传入用户选择的交互结果
+                // using Kingdee.BOS.Core.Interaction;
+                //saveOption.SetIgnoreInteractionFlag(this.Option.GetIgnoreInteractionFlag());
+
+                //// 如下代码，强制要求忽略交互提示(演示案例不需要，注释掉)
+                saveOption.SetIgnoreWarning(true);
+                //// using Kingdee.BOS.Core.Interaction;
+                saveOption.SetIgnoreInteractionFlag(true);
+                // 调用保存服务，自动保存
+                ISaveService saveService = ServiceHelper.GetService<ISaveService>();
+                var saveResult = saveService.Save(ctx, targetBillMeta.BusinessInfo, targetBillObjs, saveOption, "Save");
+                // 判断自动保存结果：只有操作成功，才会继续
+                if (this.CheckOpResult(saveResult, saveOption))
+                {
+                    //return;
+                }
+                result.Add(targetBillObjs);
+                //return targetBillObjs;
             }
-            return targetBillObjs;
+            return result;
         }
 
         #endregion
@@ -205,6 +283,8 @@ namespace KEEPER.K3.APP
                 return null;
             }
         }
+
+        
         #endregion
 
         #region 获取除审核失败其余采购件调拨单数据
@@ -453,9 +533,9 @@ namespace KEEPER.K3.APP
         #endregion
 
         #region 判断是否有未处理过的采购件调拨数据
-        public bool isTransfer(Context ctx,UpdatePrtableinEnum status)
+        public bool isTransfer(Context ctx,ObjectEnum Obstatus,UpdatePrtableinEnum status)
         {
-            if (status == UpdatePrtableinEnum.BeforeSave)
+            if (status == UpdatePrtableinEnum.BeforeSave&&Obstatus == ObjectEnum.PurTransfer)
             {
                 //[采购件]and[预检完成]and[处理错误状态不等于审核]的数据
                 string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 3 and status = 3 and ferrorstatus <> 2");
@@ -469,10 +549,38 @@ namespace KEEPER.K3.APP
                     return true;
                 }
             }
-            else if (status == UpdatePrtableinEnum.AuditError)
+            else if (status == UpdatePrtableinEnum.AuditError&&Obstatus == ObjectEnum.PurTransfer)
             {
                 //[采购件]and[预检完成]and[处理错误状态等于审核]的数据
                 string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 3 and status = 3 and ferrorstatus = 2");
+                int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
+                if (amount == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else if (status == UpdatePrtableinEnum.BeforeSave&& Obstatus == ObjectEnum.OPLAQual)
+            {
+                //合格品and预检完成and处理错误状态不等于审核的数据
+                string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 0 and status = 3 and ferrorstatus <> 2");
+                int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
+                if (amount == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else if (status == UpdatePrtableinEnum.BeforeSave && Obstatus == ObjectEnum.OPLAUnQual)
+            {
+                //不合格品and预检完成and处理错误状态不等于审核的数据
+                string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 1 and status = 3 and ferrorstatus <> 2");
                 int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
                 if (amount == 0)
                 {
@@ -802,6 +910,23 @@ namespace KEEPER.K3.APP
                 }
             }
             return isSuccess;
+        }
+
+
+        private string CreateTempTalbe(Context ctx, string createSql)
+        {
+            string tableName = ServiceHelper.GetService<IDBService>().CreateTemporaryTableName(ctx);
+            createSql = string.Format(createSql, tableName);
+            try
+            {
+                DBUtils.Execute(ctx, createSql);
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            return tableName;
         }
     }
 }

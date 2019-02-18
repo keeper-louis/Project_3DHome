@@ -29,7 +29,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        DynamicObject[] ConvertBills(Context ctx, ConvertOption option);
+        List<DynamicObject[]> ConvertBills(Context ctx, List<ConvertOption> option,string SourceFormId,string TargetFormId,string SourceEntryEntityKey);
 
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        Boolean isTransfer(Context ctx,UpdatePrtableinEnum status);
+        Boolean isTransfer(Context ctx,ObjectEnum Obstatus,UpdatePrtableinEnum status);
 
         /// <summary>
         /// 获取采购调拨数据
@@ -96,7 +96,15 @@ namespace KEEPER.K3._3D.Contracts
         [FaultContract(typeof(ServiceFault))]
         List<UpdatePrtableEntity> getAuditErrorData(Context ctx, UpdatePrtableinEnum status);
 
-
+        /// <summary>
+        /// 获取工序计划下推工序汇报数据源
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="Obstatus">业务类别码</param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        List<ConvertOption> getOLAPushData(Context ctx, ObjectEnum Obstatus);
         /// <summary>
         /// 更新prtablein中间表状态以及更新时间。。。。。
         /// </summary>

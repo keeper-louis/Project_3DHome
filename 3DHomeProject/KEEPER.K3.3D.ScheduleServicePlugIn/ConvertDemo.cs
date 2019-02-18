@@ -41,7 +41,7 @@ namespace KEEPER.K3._3D.ScheduleServicePlugIn
             sourceBillEntryIds.Add(4132136);
             option.SourceBillEntryIds = sourceBillEntryIds;
             option.SourceEntryEntityKey = "FSubEntity";
-            _3DServiceHelper._3DServiceHelper.ConvertBills(ctx, option);
+            //_3DServiceHelper._3DServiceHelper.ConvertBills(ctx, option);
         }
     }
 }

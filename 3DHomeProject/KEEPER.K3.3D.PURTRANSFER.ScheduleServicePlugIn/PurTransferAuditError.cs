@@ -22,7 +22,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
         private List<UpdatePrtableEntity> purTransferData;
         public void Run(Context ctx, Schedule schedule)
         {
-            if (_3DServiceHelper._3DServiceHelper.isTransfer(ctx, UpdatePrtableinEnum.AuditError))
+            if (_3DServiceHelper._3DServiceHelper.isTransfer(ctx,ObjectEnum.PurTransfer,UpdatePrtableinEnum.AuditError))
             {
                 //获取审核失败数据集合
                 purTransferData = _3DServiceHelper._3DServiceHelper.getAuditErrorData(ctx, UpdatePrtableinEnum.AuditError);
