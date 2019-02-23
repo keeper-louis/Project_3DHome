@@ -47,11 +47,11 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                     }
                 }
                 //更新prtablein表 审核错误信息
-                _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AuditError, null, exceptPrtList);
+                _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AuditError,ObjectEnum.PurTransfer, null, exceptPrtList);
                 //更新prtablein表审核成功信息
-                _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AuditSucess, null, successPrtList);
+                _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AuditSucess,ObjectEnum.PurTransfer, null, successPrtList);
                 //插入审核错误信息进入错误信息表
-                _3DServiceHelper._3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.AuditError);
+                _3DServiceHelper._3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.AuditError,ObjectEnum.PurTransfer);
             }
         }
     }

@@ -29,7 +29,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        List<DynamicObject[]> ConvertBills(Context ctx, List<ConvertOption> option,string SourceFormId,string TargetFormId,string SourceEntryEntityKey);
+        DynamicObject[] ConvertBills(Context ctx, List<ConvertOption> option,string SourceFormId,string TargetFormId,string SourceEntryEntityKey);
 
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        IOperationResult SaveBill(Context ctx, string FormID, DynamicObject dyObject);
+        IOperationResult SaveBill(Context ctx, string FormID, DynamicObject[] dyObject);
 
         /// <summary>
         /// 批量保存单据
@@ -114,7 +114,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <param name="uyList">更新数据包实体集合</param>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        void updateTableStatus(Context ctx, UpdatePrtableinEnum status,long[] ids = null,List<UpdatePrtableEntity> uyList = null);
+        void updateTableStatus(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus,long[] ids = null,List<UpdatePrtableEntity> uyList = null);
 
         /// <summary>
         /// 将错误信息插入错误信息表中
@@ -123,7 +123,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <param name="status">不同状态更新枚举</param>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        void insertErrorTable(Context ctx, UpdatePrtableinEnum status);
+        void insertErrorTable(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus);
 
         /// <summary>
         /// 提交单据
@@ -157,6 +157,6 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null,List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null,DynamicObject submitResult = null,long k3cloudheadid = 0,string billno = "");
+        List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null,List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null,DynamicObject submitResult = null,long k3cloudheadid = 0,string billno = "",string formid = "");
     }
 }

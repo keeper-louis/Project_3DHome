@@ -66,9 +66,9 @@ namespace KEEPER.K3.APP
             {
                 if (Obstatus == ObjectEnum.OPLAQual)
                 {
-                    string createSql = "create table {0}(FID INT, FDETAILID decimal(23, 10), amount decimal(23, 10))";
+                    string createSql = "create table {0}(FID INT, FDETAILID decimal(23, 10), amount decimal(23, 10),PrtInId INT,FDATE DATETIME,FMONUMBER nvarchar(50),FMOENTRYSEQ int,Technicscode nvarchar(10))";
                     tableName = CreateTempTalbe(ctx, createSql);
-                    string strSqlAll = string.Format(@"/*dialect*/insert into {0} select ola.FID, odeatil.FDETAILID, sum(prtIn.amount) amount
+                    string strSqlAll = string.Format(@"/*dialect*/insert into {0} select ola.FID, odeatil.FDETAILID, prtIn.amount amount,prtIn.id PrtInId,prtIn.fdate FDATE,ola.FMONUMBER,ola.FMOENTRYSEQ,prtIn.Technicscode
   from prtablein prtIn
  inner join T_SFC_OPERPLANNING ola
     on prtIn.salenumber = ola.FSALEORDERNUMBER
@@ -79,9 +79,9 @@ namespace KEEPER.K3.APP
  where prtIn.state = 0
    and prtIn.status = 3
    and prtIn.Ferrorstatus <> 2
- group by ola.FID, odeatil.FDETAILID",tableName);
+   and (ola.fid = 855679 or ola.fid = 683831)", tableName);
                 DBUtils.Execute(ctx, strSqlAll);
-                string strSql = string.Format(@"/*dialect*/select distinct top 1000 ola.FID
+                string strSql = string.Format(@"/*dialect*/select distinct top 1000 ola.FID, prtIn.fdate
   from prtablein prtIn
  inner join T_SFC_OPERPLANNING ola
     on prtIn.salenumber = ola.FSALEORDERNUMBER
@@ -92,26 +92,33 @@ namespace KEEPER.K3.APP
  where prtIn.state = 0
    and prtIn.status = 3
    and prtIn.Ferrorstatus <> 2
- group by ola.FID, odeatil.FDETAILID");
+   and (ola.fid = 855679 or ola.fid = 683831)");
                     DynamicObjectCollection OlaPustCol = DBUtils.ExecuteDynamicObject(ctx, strSql);
                     List<ConvertOption> OlaData = new List<ConvertOption>();
                     foreach (DynamicObject item in OlaPustCol)
                     {
                         ConvertOption option = new ConvertOption();
-                        string strSqlOption = string.Format(@"select * from {0} where FID = {1}", tableName, Convert.ToInt64(item["FID"]));
+                        string strSqlOption = string.Format(@"select * from {0} where FID = {1} and FDATE = '{2}'", tableName, Convert.ToInt64(item["FID"]),Convert.ToDateTime(item["FDATE"]));
                         DynamicObjectCollection dcl = DBUtils.ExecuteDynamicObject(ctx, strSqlOption);
+                        option.FDATE = Convert.ToDateTime(item["FDATE"]);
                         List<long> sourceBillIds = new List<long>();
                         sourceBillIds.Add(Convert.ToInt64(item["FID"]));
                         option.SourceBillIds = sourceBillIds;
                         List<long> sourceBillEntryIds = new List<long>();
                         List<int> mount = new List<int>();
+                        List<long> prtIdList = new List<long>();
+                        Dictionary<string, int> dic = new Dictionary<string, int>();
                         foreach (DynamicObject dc in dcl)
                         {
                             sourceBillEntryIds.Add(Convert.ToInt64(dc["FDETAILID"]));
                             mount.Add(Convert.ToInt32(dc["amount"]));
+                            prtIdList.Add(Convert.ToInt64(dc["PrtInId"]));
+                            dic.Add(Convert.ToString(dc["FMONUMBER"]) + Convert.ToString(dc["FMOENTRYSEQ"]) + Convert.ToString(dc["Technicscode"]), Convert.ToInt32(dc["PrtInId"]));
                         }
                         option.SourceBillEntryIds = sourceBillEntryIds;
                         option.mount = mount;
+                        option.prtInId = prtIdList;
+                        option.dic = dic;
                         OlaData.Add(option);
                     }
                     return OlaData;
@@ -136,9 +143,10 @@ namespace KEEPER.K3.APP
         #endregion
 
         #region 下推
-        public List<DynamicObject[]> ConvertBills(Context ctx, List<ConvertOption> options,string SourceFormId,string TargetFormId,string SourceEntryEntityKey)
+        public DynamicObject[] ConvertBills(Context ctx, List<ConvertOption> options,string SourceFormId,string TargetFormId,string SourceEntryEntityKey)
         {
-            List<DynamicObject[]> result = new List<DynamicObject[]>();
+            //List<DynamicObject[]> result = new List<DynamicObject[]>();
+            List<DynamicObject> before = new List<DynamicObject>();
             //IEnumerable<DynamicObject> targetDatas = null;
             IConvertService convertService = ServiceHelper.GetService<IConvertService>();
             var rules = convertService.GetConvertRules(ctx, SourceFormId, TargetFormId);
@@ -195,7 +203,7 @@ namespace KEEPER.K3.APP
                         fieldValues.Add(SourceEntryEntityKey, option.SourceBillEntryIds[i].ToString());
                         row.FieldValues = fieldValues;
                         srcSelectedRows.Add(row);
-                        dic.Add(option.SourceBillEntryIds[i], new List<Tuple<string, int>> { new Tuple<string, int>(" ", option.mount[0]) });
+                        dic.Add(option.SourceBillEntryIds[i], new List<Tuple<string, int>> { new Tuple<string, int>(" ", option.mount[i]) });
                     }
                 }
                 // 指定目标单单据类型:情况比较复杂，直接留空，会下推到默认的单据类型
@@ -225,40 +233,78 @@ namespace KEEPER.K3.APP
                 // 开始处理下推结果:
                 // 获取下推生成的下游单据数据包
                 DynamicObject[] targetBillObjs = (from p in operationResult.TargetDataEntities select p.DataEntity).ToArray();
+                foreach (DynamicObject cc in targetBillObjs)
+                {
+                    cc["FDATE"] = Convert.ToDateTime(option.FDATE);
+                    DynamicObjectCollection rpt = cc["OptRptEntry"] as DynamicObjectCollection;
+                    foreach (DynamicObject item in rpt)
+                    {
+                        item["FPRTABLEINID"] = option.dic[Convert.ToString(item["MoNumber"]) + Convert.ToString(item["MoRowNumber"]) + Convert.ToString(item["OperNumber"])];
+
+                    }
+                    before.Add(cc);
+                }
                 if (targetBillObjs.Length == 0)
                 {
                     // 未下推成功目标单，抛出错误，中断审核
-                    throw new KDBusinessException("", string.Format("由{0}自动下推{1}，没有成功生成数据包，自动下推失败！", option.SourceFormId, option.TargetFormId));
+                    throw new KDBusinessException("", string.Format("由{0}自动下推{1}，没有成功生成数据包，自动下推失败！", SourceFormId, TargetFormId));
                 }
                 // 对下游单据数据包，进行适当的修订，以避免关键字段为空，自动保存失败
                 // 示例代码略
                 // 读取目标单据元数据
-                IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();
-                var targetBillMeta = metaService.Load(ctx, option.TargetFormId) as FormMetadata;
-                // 构建保存操作参数：设置操作选项值，忽略交互提示
-                OperateOption saveOption = OperateOption.Create();
-                // 忽略全部需要交互性质的提示，直接保存；
-                //saveOption.SetIgnoreWarning(true);              // 忽略交互提示
-                //saveOption.SetInteractionFlag(this.Option.GetInteractionFlag());        // 如果有交互，传入用户选择的交互结果
-                // using Kingdee.BOS.Core.Interaction;
-                //saveOption.SetIgnoreInteractionFlag(this.Option.GetIgnoreInteractionFlag());
-
-                //// 如下代码，强制要求忽略交互提示(演示案例不需要，注释掉)
-                saveOption.SetIgnoreWarning(true);
+                //IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();
+                //var targetBillMeta = metaService.Load(ctx, TargetFormId) as FormMetadata;
+                //// 构建保存操作参数：设置操作选项值，忽略交互提示
+                //OperateOption saveOption = OperateOption.Create();
+                //// 忽略全部需要交互性质的提示，直接保存；
+                ////saveOption.SetIgnoreWarning(true);              // 忽略交互提示
+                ////saveOption.SetInteractionFlag(this.Option.GetInteractionFlag());        // 如果有交互，传入用户选择的交互结果
                 //// using Kingdee.BOS.Core.Interaction;
-                saveOption.SetIgnoreInteractionFlag(true);
-                // 调用保存服务，自动保存
-                ISaveService saveService = ServiceHelper.GetService<ISaveService>();
-                var saveResult = saveService.Save(ctx, targetBillMeta.BusinessInfo, targetBillObjs, saveOption, "Save");
-                // 判断自动保存结果：只有操作成功，才会继续
-                if (this.CheckOpResult(saveResult, saveOption))
-                {
-                    //return;
-                }
-                result.Add(targetBillObjs);
+                ////saveOption.SetIgnoreInteractionFlag(this.Option.GetIgnoreInteractionFlag());
+
+                ////// 如下代码，强制要求忽略交互提示(演示案例不需要，注释掉)
+                //saveOption.SetIgnoreWarning(true);
+                ////// using Kingdee.BOS.Core.Interaction;
+                //saveOption.SetIgnoreInteractionFlag(true);
+                //// 调用保存服务，自动保存
+                //ISaveService saveService = ServiceHelper.GetService<ISaveService>();
+                //var saveResult = saveService.Save(ctx, targetBillMeta.BusinessInfo, targetBillObjs, saveOption, "Save");
+                //// 判断自动保存结果：只有操作成功，才会继续
+                //if (this.CheckOpResult(saveResult, saveOption))
+                //{
+                //    //return;
+                //}
+                //DynamicObject[] aa = before.Select(p => p).ToArray() as DynamicObject[];
+                //result.Add(targetBillObjs);
                 //return targetBillObjs;
             }
-            return result;
+            DynamicObject[] aa = before.Select(p => p).ToArray() as DynamicObject[];
+            //IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();
+            //var targetBillMeta = metaService.Load(ctx, TargetFormId) as FormMetadata;
+            // 构建保存操作参数：设置操作选项值，忽略交互提示
+            //OperateOption saveOption = OperateOption.Create();
+            // 忽略全部需要交互性质的提示，直接保存；
+            //saveOption.SetIgnoreWarning(true);              // 忽略交互提示
+            //saveOption.SetInteractionFlag(this.Option.GetInteractionFlag());        // 如果有交互，传入用户选择的交互结果
+            // using Kingdee.BOS.Core.Interaction;
+            //saveOption.SetIgnoreInteractionFlag(this.Option.GetIgnoreInteractionFlag());
+
+            //// 如下代码，强制要求忽略交互提示(演示案例不需要，注释掉)
+            //saveOption.SetIgnoreWarning(true);
+            //// using Kingdee.BOS.Core.Interaction;
+            //saveOption.SetIgnoreInteractionFlag(true);
+            // 调用保存服务，自动保存
+            //ISaveService saveService = ServiceHelper.GetService<ISaveService>();
+            //var saveResult =  saveService.Save(ctx, targetBillMeta.BusinessInfo, aa, saveOption, "Save");
+
+            // 判断自动保存结果：只有操作成功，才会继续
+            //if (this.CheckOpResult(saveResult, saveOption))
+            //{
+            //    //return;
+            //}
+            //result.Add(targetBillObjs);
+            //return result;
+            return aa;
         }
 
         #endregion
@@ -374,9 +420,9 @@ namespace KEEPER.K3.APP
         #endregion
 
         #region 错误信息表插入
-        public void insertErrorTable(Context ctx, UpdatePrtableinEnum status)
+        public void insertErrorTable(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus)
         {
-            if (status == UpdatePrtableinEnum.SaveError)
+            if (status == UpdatePrtableinEnum.SaveError&&Obstatus == ObjectEnum.PurTransfer)
             {
                 string strSql = string.Format(@"/*dialect*/insert into processtable
   select Prtablein.id FBILLNO,
@@ -391,6 +437,30 @@ namespace KEEPER.K3.APP
          getdate() FSUBDATE
     from Prtablein
    where Prtablein.state = 3
+     and Prtablein.Ferrorstatus = 1
+     and Prtablein.status = 2
+     and not exists
+   (select 1
+            from Processtable
+           where Processtable.FBILLNO = Prtablein.id)");
+                DBUtils.Execute(ctx, strSql);
+            }
+
+            if (status == UpdatePrtableinEnum.SaveError && Obstatus == ObjectEnum.OPLAQual)
+            {
+                string strSql = string.Format(@"/*dialect*/insert into processtable
+  select Prtablein.id FBILLNO,
+         'A' FDOCUMENTSTATUS,
+         Prtablein.salenumber SALENUMBER,
+         Prtablein.linenumber LINENUMBER,
+         Prtablein.technicscode TECHNICSCODE,
+         Prtablein.id PRTABLEINID,
+         Prtablein.ferrormsg REASON,
+         Prtablein.state STATE,
+         Prtablein.fdate FDATE,
+         getdate() FSUBDATE
+    from Prtablein
+   where Prtablein.state = 0
      and Prtablein.Ferrorstatus = 1
      and Prtablein.status = 2
      and not exists
@@ -479,7 +549,7 @@ namespace KEEPER.K3.APP
         #endregion
 
         #region 构建更新数据包集合
-        public List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billnos = "")
+        public List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billnos = "",string formId = "")
         {
             if (status == UpdatePrtableinEnum.AfterCreateModel)
             {
@@ -488,7 +558,7 @@ namespace KEEPER.K3.APP
                 {
                     long id = Convert.ToInt64(item["Id"]);
                     string billno = item["BillNo"] != null ? Convert.ToString(item["BillNo"]) : "";
-                    foreach (DynamicObject aa in item["TransferDirectEntry"] as DynamicObjectCollection)
+                    foreach (DynamicObject aa in item[formId] as DynamicObjectCollection)
                     {
                         UpdatePrtableEntity uy = new UpdatePrtableEntity();
                         uy.k3cloudheadID = id;
@@ -543,6 +613,19 @@ namespace KEEPER.K3.APP
                 uy.k3cloudheadID = Convert.ToInt64(ids[0]);//pk
                 exceptPrtList.Add(uy);
                 return exceptPrtList;
+            }
+            if (status == UpdatePrtableinEnum.SubmitSucess)
+            {
+                List<UpdatePrtableEntity> updatePrtList = new List<UpdatePrtableEntity>();
+                object[] ids = (from c in auditResult.SuccessDataEnity
+                                select c[0]).ToArray();
+                foreach (object item in ids)
+                {
+                    UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                    uy.k3cloudheadID = Convert.ToInt64(item);
+                    updatePrtList.Add(uy);
+                }
+                return updatePrtList;
             }
             return null;
         }
@@ -616,15 +699,35 @@ namespace KEEPER.K3.APP
         }
         #endregion
 
-        #region 单个保存
-        public IOperationResult SaveBill(Context ctx, string FormID, DynamicObject dyObject)
+        #region 单个保存?批量保存
+        public IOperationResult SaveBill(Context ctx, string FormID, DynamicObject[] dyObject)
         {
-            IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();//元数据服务
-            FormMetadata Meta = metaService.Load(ctx, FormID) as FormMetadata;//获取元数据
-            OperateOption SaveOption = OperateOption.Create();
-            IOperationResult SaveResult = BusinessDataServiceHelper.Save(ctx, Meta.BusinessInfo, dyObject, SaveOption, "Save");
-            //BusinessDataServiceHelper.Save()
-            return SaveResult;
+            //IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();//元数据服务
+            //FormMetadata Meta = metaService.Load(ctx, FormID) as FormMetadata;//获取元数据
+            //OperateOption SaveOption = OperateOption.Create();
+            //IOperationResult SaveResult = BusinessDataServiceHelper.Save(ctx, Meta.BusinessInfo, dyObject, SaveOption, "Save");
+            ////BusinessDataServiceHelper.Save()
+            //return SaveResult;
+
+
+            IMetaDataService metaService = ServiceHelper.GetService<IMetaDataService>();
+            FormMetadata targetBillMeta = metaService.Load(ctx, FormID) as FormMetadata;
+            // 构建保存操作参数：设置操作选项值，忽略交互提示
+            OperateOption saveOption = OperateOption.Create();
+            // 忽略全部需要交互性质的提示，直接保存；
+            //saveOption.SetIgnoreWarning(true);              // 忽略交互提示
+            //saveOption.SetInteractionFlag(this.Option.GetInteractionFlag());        // 如果有交互，传入用户选择的交互结果
+            // using Kingdee.BOS.Core.Interaction;
+            //saveOption.SetIgnoreInteractionFlag(this.Option.GetIgnoreInteractionFlag());
+
+            //// 如下代码，强制要求忽略交互提示(演示案例不需要，注释掉)
+            saveOption.SetIgnoreWarning(true);
+            //// using Kingdee.BOS.Core.Interaction;
+            saveOption.SetIgnoreInteractionFlag(true);
+            // 调用保存服务，自动保存
+            ISaveService saveService = ServiceHelper.GetService<ISaveService>();
+            IOperationResult saveResult = saveService.Save(ctx, targetBillMeta.BusinessInfo, dyObject, saveOption, "Save");
+            return saveResult;
         }
         #endregion
 
@@ -640,7 +743,7 @@ namespace KEEPER.K3.APP
         #endregion
 
         #region 更新prtablein表
-        public void updateTableStatus(Context ctx, UpdatePrtableinEnum status,long[] ids = null,List<UpdatePrtableEntity> uyList = null)
+        public void updateTableStatus(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus,long[] ids = null,List<UpdatePrtableEntity> uyList = null)
         {
             if (status == UpdatePrtableinEnum.AfterGetDate)
             {
@@ -732,7 +835,7 @@ namespace KEEPER.K3.APP
                 // 执行批量更新
                 Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
             }
-            if (status == UpdatePrtableinEnum.SaveError)
+            if (status == UpdatePrtableinEnum.SaveError && Obstatus == ObjectEnum.PurTransfer)
             {
                 //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
                 DataTable dt = new DataTable();
@@ -764,6 +867,57 @@ namespace KEEPER.K3.APP
                 // columnName: DataTable中的列名
                 // fieldName : 物料表格中匹配的字段名
                 batchUpdateParam.AddWhereExpression("fcloudid", KDDbType.Int64, "fcloudid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Ferrorstatus", KDDbType.Int32, "Ferrorstatus");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("ferrormsg", KDDbType.String, "ferrormsg");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+                // 执行批量更新
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+            }
+            if (status == UpdatePrtableinEnum.SaveError && Obstatus == ObjectEnum.OPLAQual)
+            {
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                DataTable dt = new DataTable();
+                dt.TableName = "prtablein";
+                var idCol = dt.Columns.Add("fcloudheadid");
+                idCol.DataType = typeof(long);
+                var statusCol = dt.Columns.Add("status");
+                statusCol.DataType = typeof(int);
+                var errStatusCol = dt.Columns.Add("Ferrorstatus");
+                errStatusCol.DataType = typeof(int);
+                var errmsg = dt.Columns.Add("ferrormsg");
+                errmsg.DataType = typeof(string);
+                var subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                // 灌入测试数据
+                dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+                foreach (var item in uyList)
+                {
+                    dt.LoadDataRow(new object[] { item.k3cloudID, 2, 1, item.errorMsg, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                // 准备批量更新服务参数
+                // tableName : 待更新的物理表格名
+                // dt : 待更新的数据
+                BatchSqlParam batchUpdateParam = new BatchSqlParam("prtablein", dt);
+
+                // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+                // 匹配字段可以添加多个
+                // columnName: DataTable中的列名
+                // fieldName : 物料表格中匹配的字段名
+                batchUpdateParam.AddWhereExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
                 // 设置待更新的字段
                 // columnName: DataTable中的列名
                 // fieldName : 对应的物料表格字段名
@@ -855,6 +1009,46 @@ namespace KEEPER.K3.APP
                 // 准备批量更新服务参数
                 // tableName : 待更新的物理表格名
                 // dt : 待更新的数据
+                BatchSqlParam batchUpdateParam = new BatchSqlParam("prtablein", dt);
+
+                // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+                // 匹配字段可以添加多个
+                // columnName: DataTable中的列名
+                // fieldName : 物料表格中匹配的字段名
+                batchUpdateParam.AddWhereExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+                // 执行批量更新
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+            }
+            if (status == UpdatePrtableinEnum.SubmitSucess)
+            {
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                DataTable dt = new DataTable();
+                dt.TableName = "prtablein";
+                var idCol = dt.Columns.Add("fcloudheadid");
+                idCol.DataType = typeof(long);
+                var statusCol = dt.Columns.Add("status");
+                statusCol.DataType = typeof(int);
+                var subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                // 灌入测试数据
+                dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+                foreach (var item in uyList)
+                {
+                    dt.LoadDataRow(new object[] { item.k3cloudheadID, 5, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                // 准备批量更新服务参数
+                // tableName : 待更新的物理表格名
+                // dt : 待更新的数据
+               
                 BatchSqlParam batchUpdateParam = new BatchSqlParam("prtablein", dt);
 
                 // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配

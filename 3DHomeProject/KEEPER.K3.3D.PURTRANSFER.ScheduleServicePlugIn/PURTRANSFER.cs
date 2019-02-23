@@ -30,7 +30,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                 //List<List<long>> aa = purTransferData.Select(p => p.salOrderTransfer.Select(s => s.MATERIALID).ToList()).ToList();
                 long[] bb = purTransferData.SelectMany(t => t.salOrderTransfer.Select(s => s.prtID).ToList()).ToArray();//本次执行计划要处理的数据的主键ID
                 //根据主键对数据标识进行更新，同时设置更新时间戳
-                _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AfterGetDate,bb);
+                _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AfterGetDate,ObjectEnum.PurTransfer,bb);
                 List<DynamicObject> modelList = new List<DynamicObject>();
                 foreach (var item in purTransferData)
                 {
@@ -46,10 +46,10 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                 //数据包整理完成后，将实际的分录主键反写回prtablein表，便于未来反写其他状态所用
                 //object[] trasferentry = (from p in model
                 //                          select p[77]).ToArray();
-                List<UpdatePrtableEntity> updatePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AfterCreateModel, model, null);
+                List<UpdatePrtableEntity> updatePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AfterCreateModel, model, null,null,null,null,0,"", "TransferDirectEntry");
                 if (updatePrtList!=null)
                 {
-                    _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AfterCreateModel, null, updatePrtList);
+                    _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AfterCreateModel,ObjectEnum.PurTransfer, null, updatePrtList);
                 }
                 //处理保存结果，成功、失败
                 if (saveResult.SuccessDataEnity!=null)
@@ -79,11 +79,11 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                             }
                         }
                         //更新prtablein表 审核错误信息
-                        _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AuditError, null, exceptPrtList);
+                        _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AuditError,ObjectEnum.PurTransfer, null, exceptPrtList);
                         //更新prtablein表审核成功信息
-                        _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AuditSucess, null, successPrtList);
+                        _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AuditSucess,ObjectEnum.PurTransfer, null, successPrtList);
                         //插入审核错误信息进入错误信息表
-                        _3DServiceHelper._3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.AuditError);
+                        _3DServiceHelper._3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.AuditError,ObjectEnum.PurTransfer);
 
                         //object[] ips = (from c in submitResult.SuccessDataEnity
                         //                select c[0]).ToArray();
@@ -108,9 +108,9 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                 {
                     List<UpdatePrtableEntity> updateSavePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.SaveError, null, (List<ValidationErrorInfo>)saveResult.ValidationErrors);
                     //更新prtablein表状态
-                    _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.SaveError, null, updateSavePrtList);
+                    _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.SaveError,ObjectEnum.PurTransfer, null, updateSavePrtList);
                     //插入Processtable表信息
-                    _3DServiceHelper._3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.SaveError);
+                    _3DServiceHelper._3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.SaveError,ObjectEnum.PurTransfer);
 
                 }
             }

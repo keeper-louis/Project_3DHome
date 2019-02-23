@@ -8,11 +8,25 @@ namespace KEEPER.K3._3D.Core.ParamOption
 {
     public class ConvertOption
     {
+
+        /// <summary>
+        /// prtableIn表主键集合
+        /// </summary>
+        public Dictionary<string, int> dic { get; set; }
+        /// <summary>
+        /// prtableIn表数据主键
+        /// </summary>
+        public List<long> prtInId { get; set; }
+
         /// <summary>
         /// 源单标识
         /// </summary>
         public string SourceFormId { get; set; }
 
+        /// <summary>
+        /// 业务日期
+        /// </summary>
+        public DateTime FDATE { get; set; }
         /// <summary>
         /// 目标单标识
         /// </summary>

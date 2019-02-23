@@ -19,11 +19,10 @@ namespace KEEPER.K3._3D._3DServiceHelper
     /// </summary>
     public class _3DServiceHelper
     {
-        public static List<DynamicObject[]> ConvertBills(Context ctx, List<ConvertOption> option,string SourceFormId,string TargetFormId,string SourceEntryEntityKey)
+        public static DynamicObject[] ConvertBills(Context ctx, List<ConvertOption> option,string SourceFormId,string TargetFormId,string SourceEntryEntityKey)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            List<DynamicObject[]> targetDatas = service.ConvertBills(ctx, option,SourceFormId,TargetFormId,SourceEntryEntityKey);
-            return targetDatas;
+            return service.ConvertBills(ctx, option,SourceFormId,TargetFormId,SourceEntryEntityKey);
         }
 
         /// <summary>
@@ -40,7 +39,7 @@ namespace KEEPER.K3._3D._3DServiceHelper
             return model;
         }
 
-        public static IOperationResult Save(Context ctx, string FormID, DynamicObject dyObject)
+        public static IOperationResult Save(Context ctx, string FormID, DynamicObject[] dyObject)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
             IOperationResult saveResult = service.SaveBill(ctx, FormID, dyObject);
@@ -79,16 +78,16 @@ namespace KEEPER.K3._3D._3DServiceHelper
             return service.getAuditErrorData(ctx, status);
         }
 
-        public static void updateTableStatus(Context ctx, UpdatePrtableinEnum status, long[] ids = null,List<UpdatePrtableEntity> uyList = null)
+        public static void updateTableStatus(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus, long[] ids = null,List<UpdatePrtableEntity> uyList = null)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            service.updateTableStatus(ctx, status, ids,uyList);
+            service.updateTableStatus(ctx, status,Obstatus,ids,uyList);
         }
 
-        public static void insertErrorTable(Context ctx, UpdatePrtableinEnum status)
+        public static void insertErrorTable(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            service.insertErrorTable(ctx, status);
+            service.insertErrorTable(ctx, status,Obstatus);
         }
 
 
@@ -120,10 +119,10 @@ namespace KEEPER.K3._3D._3DServiceHelper
             return submitResult;
         }
 
-        public static List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billno = "")
+        public static List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billno = "",string formid = "")
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            return service.InstallUpdatePackage(ctx, status, trasferbill, vo, exceptPrtList, auditResult, submitResult,k3cloudheadid,billno);
+            return service.InstallUpdatePackage(ctx, status, trasferbill, vo, exceptPrtList, auditResult, submitResult,k3cloudheadid,billno,formid);
         }
 
     }
