@@ -39,7 +39,7 @@ namespace KEEPER.K3._3D.OPLA.PUSH.ScheduleServicePlugIn
                         //数据包整理完成后，将实际的分录主键反写回prtablein表，便于未来反写其他状态所用
                         //object[] trasferentry = (from p in model
                         //                          select p[77]).ToArray();
-                        List<UpdatePrtableEntity> updatePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AfterCreateModel, ConvertCol, null,null,null,null,0,"", "OptRptEntry");
+                        List<UpdatePrtableEntity> updatePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AfterCreateModel,ObjectEnum.OPLAQual, ConvertCol, null,null,null,null,0,"", "OptRptEntry");
                         if (updatePrtList != null)
                         {
                             _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AfterCreateModel,ObjectEnum.OPLAQual, null, updatePrtList);
@@ -52,7 +52,7 @@ namespace KEEPER.K3._3D.OPLA.PUSH.ScheduleServicePlugIn
                             IOperationResult submitResult = ids.Count() > 0 ? _3DServiceHelper._3DServiceHelper.Submit(ctx, "SFC_OperationReport", ids) : null;
                             if (submitResult.SuccessDataEnity != null && submitResult.SuccessDataEnity.Count()>0)
                             {
-                                List<UpdatePrtableEntity> successPrtList =_3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.SubmitSucess, null, null, null, submitResult);
+                                List<UpdatePrtableEntity> successPrtList =_3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.SubmitSucess,ObjectEnum.OPLAQual, null, null, null, submitResult);
                                 _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.SubmitSucess,ObjectEnum.OPLAQual, null, successPrtList);
                                 //foreach (DynamicObject item in submitResult.SuccessDataEnity)
                                 //{
@@ -81,7 +81,7 @@ namespace KEEPER.K3._3D.OPLA.PUSH.ScheduleServicePlugIn
                         }
                         if (((List<ValidationErrorInfo>)saveResult.ValidationErrors).Count() > 0)
                         {
-                            List<UpdatePrtableEntity> updateSavePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.SaveError, null, (List<ValidationErrorInfo>)saveResult.ValidationErrors);
+                            List<UpdatePrtableEntity> updateSavePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.SaveError,ObjectEnum.OPLAQual, null, (List<ValidationErrorInfo>)saveResult.ValidationErrors);
                             //更新prtablein表状态
                             _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.SaveError,ObjectEnum.OPLAQual, null, updateSavePrtList);
                             //插入Processtable表信息

@@ -119,10 +119,10 @@ namespace KEEPER.K3._3D._3DServiceHelper
             return submitResult;
         }
 
-        public static List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billno = "",string formid = "")
+        public static List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billno = "",string formid = "")
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            return service.InstallUpdatePackage(ctx, status, trasferbill, vo, exceptPrtList, auditResult, submitResult,k3cloudheadid,billno,formid);
+            return service.InstallUpdatePackage(ctx, status, Obstatus, trasferbill, vo, exceptPrtList, auditResult, submitResult,k3cloudheadid,billno,formid);
         }
 
     }

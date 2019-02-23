@@ -46,7 +46,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                 //数据包整理完成后，将实际的分录主键反写回prtablein表，便于未来反写其他状态所用
                 //object[] trasferentry = (from p in model
                 //                          select p[77]).ToArray();
-                List<UpdatePrtableEntity> updatePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AfterCreateModel, model, null,null,null,null,0,"", "TransferDirectEntry");
+                List<UpdatePrtableEntity> updatePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AfterCreateModel,ObjectEnum.PurTransfer, model, null,null,null,null,0,"", "TransferDirectEntry");
                 if (updatePrtList!=null)
                 {
                     _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AfterCreateModel,ObjectEnum.PurTransfer, null, updatePrtList);
@@ -67,7 +67,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                             IOperationResult auditResult = _3DServiceHelper._3DServiceHelper.Audit(ctx, "STK_TransferDirect", ips);
                             if (auditResult.IsSuccess)
                             {
-                                successPrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AuditSucess, null, null, successPrtList, auditResult, null);
+                                successPrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AuditSucess,ObjectEnum.PurTransfer, null, null, successPrtList, auditResult, null);
                             }
                             else if (((List < ValidationErrorInfo > )auditResult.ValidationErrors).Count()>0)
                             {
@@ -75,7 +75,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                             }
                             else if (!auditResult.InteractionContext.SimpleMessage.Equals("")&& auditResult.InteractionContext.SimpleMessage!=null)
                             {
-                                exceptPrtList =  _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AuditError, null, null, exceptPrtList,auditResult, item);
+                                exceptPrtList =  _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AuditError,ObjectEnum.PurTransfer, null, null, exceptPrtList,auditResult, item);
                             }
                         }
                         //更新prtablein表 审核错误信息
@@ -106,7 +106,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                 }
                 if (((List<ValidationErrorInfo>)saveResult.ValidationErrors).Count()>0)
                 {
-                    List<UpdatePrtableEntity> updateSavePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.SaveError, null, (List<ValidationErrorInfo>)saveResult.ValidationErrors);
+                    List<UpdatePrtableEntity> updateSavePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.SaveError,ObjectEnum.PurTransfer, null, (List<ValidationErrorInfo>)saveResult.ValidationErrors);
                     //更新prtablein表状态
                     _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.SaveError,ObjectEnum.PurTransfer, null, updateSavePrtList);
                     //插入Processtable表信息

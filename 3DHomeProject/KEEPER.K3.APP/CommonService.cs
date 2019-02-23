@@ -78,8 +78,7 @@ namespace KEEPER.K3.APP
    and prtIn.Technicscode = odeatil.FOPERNUMBER
  where prtIn.state = 0
    and prtIn.status = 3
-   and prtIn.Ferrorstatus <> 2
-   and (ola.fid = 855679 or ola.fid = 683831)", tableName);
+   and prtIn.Ferrorstatus <> 2", tableName);
                 DBUtils.Execute(ctx, strSqlAll);
                 string strSql = string.Format(@"/*dialect*/select distinct top 1000 ola.FID, prtIn.fdate
   from prtablein prtIn
@@ -91,8 +90,7 @@ namespace KEEPER.K3.APP
    and prtIn.Technicscode = odeatil.FOPERNUMBER
  where prtIn.state = 0
    and prtIn.status = 3
-   and prtIn.Ferrorstatus <> 2
-   and (ola.fid = 855679 or ola.fid = 683831)");
+   and prtIn.Ferrorstatus <> 2");
                     DynamicObjectCollection OlaPustCol = DBUtils.ExecuteDynamicObject(ctx, strSql);
                     List<ConvertOption> OlaData = new List<ConvertOption>();
                     foreach (DynamicObject item in OlaPustCol)
@@ -470,7 +468,7 @@ namespace KEEPER.K3.APP
                 DBUtils.Execute(ctx, strSql);
             }
 
-            if (status == UpdatePrtableinEnum.AuditError)
+            if (status == UpdatePrtableinEnum.AuditError && Obstatus == ObjectEnum.PurTransfer)
             {
                 string strSql = string.Format(@"/*dialect*/insert into processtable
   select Prtablein.id FBILLNO,
@@ -485,6 +483,29 @@ namespace KEEPER.K3.APP
          getdate() FSUBDATE
     from Prtablein
    where Prtablein.state = 3
+     and Prtablein.Ferrorstatus = 2
+     and Prtablein.status = 2
+     and not exists
+   (select 1
+            from Processtable
+           where Processtable.FBILLNO = Prtablein.id)");
+                DBUtils.Execute(ctx, strSql);
+            }
+            if (status == UpdatePrtableinEnum.AuditError && Obstatus == ObjectEnum.OPLAQual)
+            {
+                string strSql = string.Format(@"/*dialect*/insert into processtable
+  select Prtablein.id FBILLNO,
+         'A' FDOCUMENTSTATUS,
+         Prtablein.salenumber SALENUMBER,
+         Prtablein.linenumber LINENUMBER,
+         Prtablein.technicscode TECHNICSCODE,
+         Prtablein.id PRTABLEINID,
+         Prtablein.fbillno+Prtablein.ferrormsg REASON,
+         Prtablein.state STATE,
+         Prtablein.fdate FDATE,
+         getdate() FSUBDATE
+    from Prtablein
+   where Prtablein.state = 0
      and Prtablein.Ferrorstatus = 2
      and Prtablein.status = 2
      and not exists
@@ -549,7 +570,7 @@ namespace KEEPER.K3.APP
         #endregion
 
         #region 构建更新数据包集合
-        public List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billnos = "",string formId = "")
+        public List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null,long k3cloudheadid = 0,string billnos = "",string formId = "")
         {
             if (status == UpdatePrtableinEnum.AfterCreateModel)
             {
@@ -585,7 +606,7 @@ namespace KEEPER.K3.APP
                 }
                 return updatePrtList;
             }
-            if (status == UpdatePrtableinEnum.AuditError)
+            if (status == UpdatePrtableinEnum.AuditError && Obstatus == ObjectEnum.PurTransfer)
             {
                 if (submitResult!=null)
                 {
@@ -605,7 +626,33 @@ namespace KEEPER.K3.APP
                 }
                 
             }
-            if (status ==UpdatePrtableinEnum.AuditSucess)
+            if (status == UpdatePrtableinEnum.AuditError && Obstatus == ObjectEnum.OPLAQual)
+            {
+                List<UpdatePrtableEntity> uList = new List<UpdatePrtableEntity>();
+                foreach (ValidationErrorInfo item in vo)
+                {
+                    UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                    uy.k3cloudheadID = Convert.ToInt64(item.BillPKID);
+                    uy.errorMsg = item.Message;
+                    uList.Add(uy);
+                }
+                return uList;
+
+            }
+            if (status == UpdatePrtableinEnum.AuditSucess && Obstatus == ObjectEnum.OPLAQual)
+            {
+                List<UpdatePrtableEntity> uList = new List<UpdatePrtableEntity>();
+                object[] ids = (from p in auditResult.SuccessDataEnity
+                 select p[0]).ToArray();
+                foreach (long item in ids)
+                {
+                    UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                    uy.k3cloudheadID = item;
+                    uList.Add(uy);
+                }
+                return uList;
+            }
+            if (status ==UpdatePrtableinEnum.AuditSucess && Obstatus == ObjectEnum.PurTransfer)
             {
                 UpdatePrtableEntity uy = new UpdatePrtableEntity();
                 object[] ids = (from c in auditResult.SuccessDataEnity
@@ -680,6 +727,19 @@ namespace KEEPER.K3.APP
             {
                 //不合格品and预检完成and处理错误状态不等于审核的数据
                 string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 1 and status = 3 and ferrorstatus <> 2");
+                int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
+                if (amount == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else if (status == UpdatePrtableinEnum.Audit && Obstatus == ObjectEnum.OPLAQual)
+            {
+                string strSql = string.Format(@"/*dialect*/select count(*) amount from prtablein where state = 0 and status = 5 ");
                 int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
                 if (amount == 0)
                 {

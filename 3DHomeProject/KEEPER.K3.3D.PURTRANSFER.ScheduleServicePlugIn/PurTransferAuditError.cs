@@ -35,7 +35,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                     IOperationResult auditResult = _3DServiceHelper._3DServiceHelper.Audit(ctx, "STK_TransferDirect", ips);
                     if (auditResult.IsSuccess)
                     {
-                        successPrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AuditSucess, null, null, successPrtList, auditResult, null);
+                        successPrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AuditSucess,ObjectEnum.PurTransfer, null, null, successPrtList, auditResult, null);
                     }
                     else if (((List<ValidationErrorInfo>)auditResult.ValidationErrors).Count() > 0)
                     {
@@ -43,7 +43,7 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                     }
                     else if (!auditResult.InteractionContext.SimpleMessage.Equals("") && auditResult.InteractionContext.SimpleMessage != null)
                     {
-                        exceptPrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AuditError, null, null, exceptPrtList, auditResult, null,item.k3cloudheadID,item.billNo);
+                        exceptPrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.AuditError,ObjectEnum.PurTransfer, null, null, exceptPrtList, auditResult, null,item.k3cloudheadID,item.billNo);
                     }
                 }
                 //更新prtablein表 审核错误信息
