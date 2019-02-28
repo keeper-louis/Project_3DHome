@@ -122,19 +122,35 @@ from t_BD_MaterialBase tbmb, t_BD_Material tbm
             strSql = @"/*dialect*/   ";
             DBUtils.Execute(ctx, strSql);
 
-            //把接口数据表中status为0的数据（未插入到待录入表的数据状态） sum数量 插入到 待录入表
-            strSql = string.Format(@"/*dialect*/insert into Prtablein  select  Salenumber,Linenumber,Technicscode, sum(Amount) amount,
-State,'0' status,scantime,'' FsubDate,0,0
+            //把接口数据表中status为0的数据（未插入到待录入表的数据状态） sum数量 插入到 待录入表临时表Prtabletemp
+            strSql = string.Format(@"/*dialect*/insert into Prtabletemp  select  '',Salenumber,Linenumber,Technicscode, sum(Amount) amount,
+State,'0' status,scantime,'' FsubDate,0,0,'','','','' 
  from(select Salenumber, Linenumber, Technicscode, CONVERT(varchar(10), pr.scantime, 120) scantime, amount, State
  from prtable pr where pr.status = 0  ) a  group by
  Salenumber, Linenumber, Technicscode, scantime, State ");
             DBUtils.Execute(ctx, strSql);
-
+            //查询Prtablein中与Prtabletemp中s/l/t/scantime相同 并且Prtablein中status=2或3 ，Ferrorstatus<>2 插入到Prtabletemp中
+            strSql = string.Format(@"/*dialect*/insert into Prtabletemp  select pr.* from prtablein pr,Prtabletemp prt where pr.salenumber=prt.salenumber
+and pr.linenumber=prt.linenumber and pr.Technicscode=prt.Technicscode and pr.fdate=prt.fdate and pr.state=prt.state 
+and pr.status in (2,3) and pr.Ferrorstatus<>2");
+            DBUtils.Execute(ctx, strSql);
+            //删除Prtablein中与Prtabletemp中id相同的数据
+            strSql = string.Format(@"/*dialect*/delete prtablein  from Prtabletemp prt where prtablein.id=prt.id");
+            DBUtils.Execute(ctx, strSql);
+            //删除Processtable中与Prtabletemp中id相同的数据
+            strSql = string.Format(@"/*dialect*/delete Processtable  from Prtabletemp prt where Processtable.FBILLNO=prt.id");
+            DBUtils.Execute(ctx, strSql);
+            //prtabletemp表中sum(amount) 插入到 prtablein
+            strSql = string.Format(@"/*dialect*/insert into Prtablein  select  Salenumber,Linenumber,Technicscode, sum(Amount) amount,
+State,'0' status,fdate,'' FsubDate,0,0,'','','','' from prtabletemp group by Salenumber,Linenumber,Technicscode,fdate,State ");
+            //清空prtabletemp表
+            strSql = string.Format(@"/*dialect*/truncate table Prtabletemp ");
             //把仓库号给采购件
-            strSql= string.Format(@"/*dialect*/ update Prtablein set fstockid=a.FNUMBER from (
+            strSql = string.Format(@"/*dialect*/ update Prtablein set fstockid=a.FNUMBER from (
 select distinct tbs.FNUMBER,pr.salenumber,pr.linenumber from T_SAL_ORDER tso,  
 T_SAL_ORDERENTRY tsoe,Prtablein pr  ,Purchase2Stock ps,t_BD_Stock tbs
 where tso.fid=tsoe.FID and pr.Linenumber=tsoe.FSEQ and pr.Salenumber=tso.FBILLNO and tsoe.FMATERIALID=ps.FMATERIAL and tbs.FSTOCKID=ps.FSTOCK and pr.state=3 
+and pr.status=0
  ) a where Prtablein.salenumber=a.salenumber and Prtablein.linenumber=a.linenumber ");
             DBUtils.Execute(ctx, strSql);
             //把接口数据表中status全置为1 （已插入到待录入表的数据状态）
