@@ -124,6 +124,25 @@ namespace KEEPER.K3._3D._3DServiceHelper
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
             return service.InstallUpdatePackage(ctx, status, Obstatus, trasferbill, vo, exceptPrtList, auditResult, submitResult,k3cloudheadid,billno,formid);
         }
-
+        public static SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.getALSaveData(ctx, status);
+        }
+        public static Boolean isTransfer(Context ctx, ObjectEnum Obstatus, UpdateAltableinEnum status)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.isTransfer(ctx, Obstatus, status);
+        }
+        public static void updateAltableStatus(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdatePrtableEntity> uyList = null)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            service.updateAltableStatus(ctx, status, Obstatus, ids, uyList);
+        }
+        public static List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill,string formId)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.InstallUpdateAlPackage(ctx, status, Obstatus, trasferbill,formId);
+        }
     }
 }

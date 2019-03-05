@@ -158,5 +158,45 @@ namespace KEEPER.K3._3D.Contracts
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
         List<UpdatePrtableEntity> InstallUpdatePackage(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus, DynamicObject[] trasferbill = null,List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null,DynamicObject submitResult = null,long k3cloudheadid = 0,string billno = "",string formid = "");
+
+        /// <summary>
+        /// 获取调拨中间表数据源
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="Obstatus">业务类别码</param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status);
+        /// <summary>
+        /// 判断是否继续进入直接调拨计划
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        Boolean isTransfer(Context ctx, ObjectEnum Obstatus, UpdateAltableinEnum status);
+        /// <summary>
+        /// 更新altablein中间表状态以及更新时间。。。。。
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="status">不同状态更新枚举</param>
+        /// <param name="ids">prtIDS</param>
+        /// <param name="uyList">更新数据包实体集合</param>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        void updateAltableStatus(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdatePrtableEntity> uyList = null);
+        /// <summary>
+        /// 组装更新调拨接口数据包实体
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="status">不同场景的更新枚举</param>
+        /// <param name="trasferentry">调拨单更新的集合</param>
+        /// <param name="vo">错误更新的集合</param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill, string formId);
+
     }
 }

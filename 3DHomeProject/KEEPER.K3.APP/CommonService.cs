@@ -1130,7 +1130,167 @@ namespace KEEPER.K3.APP
         }
         #endregion
 
+        #region 获取调拨数据集合
+        public SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status)
+        {
+            if (status == UpdateAltableinEnum.BeforeSave)
+            {
+                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=1 order by fdate");
+                DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
+                if (dateData.Count() > 0)
+                {
+                    SalOrder2DirectTransList list = new SalOrder2DirectTransList();
+                    list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
+                    string strSql = string.Format(@"/*dialect*/select top 500 alt.fdate,
+       alt.id,
+       alt.salenumber,
+       alt.linenumber,
+       alt.Packcode,
+       orderentry.FMATERIALID,
+       orderentry.FAUXPROPID,
+       orderentry.FLOT,
+       alt.amount,
+       alt.Warehouseout,
+	   alt.Warehousein
+  from altablein alt
+ inner join t_sal_order salorder
+    on alt.salenumber = salorder.fbillno
+   and alt.status = 3
+ and alt.ferrorstatus=0
+ inner join t_sal_orderentry orderentry
+    on salorder.fid = orderentry.fid
+   and alt.linenumber = orderentry.fseq
+ where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
+                        DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
+                        List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
+                        foreach (DynamicObject purTransferData in PurTransferData)
+                        {
+                        SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
+                            salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
+                            salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
+                            salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
+                            salEntryData.lineNumber = Convert.ToString(purTransferData["linenumber"]);
+                            salEntryData.packcode = Convert.ToString(purTransferData["Packcode"]);
+                            salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
+                            salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
+                            salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
+                            salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                            salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
+                            salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
+                            salEntryDataList.Add(salEntryData);
+                        }
+                    list.SalOrder2DirectTrans = salEntryDataList;
+                    return list;
+                }
+                else
+                {
+                    return null;
+                }
 
+            }else
+            {
+                return null;
+            }
+                
+        }
+        #endregion
+        #region 判断是否有未处理过的调拨接口数据
+        public bool isTransfer(Context ctx, ObjectEnum Obstatus, UpdateAltableinEnum status)
+        {
+            if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.PurTransfer)
+            {
+                //
+                string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=3  and alt.ferrorstatus=0");
+                int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
+                if (amount == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                return false;
+            }
+
+
+        }
+        #endregion
+        #region 更新Altablein表
+        public void updateAltableStatus(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdatePrtableEntity> uyList = null)
+        {
+            if (status == UpdateAltableinEnum.AfterGetDate)
+            {
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                DataTable dt = new DataTable();
+                dt.TableName = "altablein";
+                var idCol = dt.Columns.Add("id");
+                idCol.DataType = typeof(long);
+                var statusCol = dt.Columns.Add("status");
+                statusCol.DataType = typeof(int);
+                var subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                // 灌入测试数据
+                dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+                foreach (long item in ids)
+                {
+                    dt.LoadDataRow(new object[] { item, 1, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                // 准备批量更新服务参数
+                // tableName : 待更新的物理表格名
+                // dt : 待更新的数据
+                BatchSqlParam batchUpdateParam = new BatchSqlParam("altablein", dt);
+
+                // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+                // 匹配字段可以添加多个
+                // columnName: DataTable中的列名
+                // fieldName : 物料表格中匹配的字段名
+                batchUpdateParam.AddWhereExpression("id", KDDbType.Int64, "id");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+                // 执行批量更新
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+            }
+        }
+        #endregion
+        #region 构建更新调拨接口数据包集合
+        public List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill ,string formId)
+        {
+            if (status == UpdateAltableinEnum.AfterCreateModel)
+            {
+                List<UpdateAltableinEntity> updatePrtList = new List<UpdateAltableinEntity>();
+                foreach (DynamicObject item in trasferbill)
+                {
+                    long id = Convert.ToInt64(item["Id"]);
+                    string billno = item["BillNo"] != null ? Convert.ToString(item["BillNo"]) : "";
+                    foreach (DynamicObject aa in item[formId] as DynamicObjectCollection)
+                    {
+                        UpdateAltableinEntity uy = new UpdateAltableinEntity();
+                        uy.k3cloudheadID = id;
+                        uy.billNo = billno;
+                        uy.k3cloudID = Convert.ToInt64(aa["Id"]);
+                        uy.altID = Convert.ToInt32(aa["Faltableinid"]);
+                        // uy.salenumber = Convert.ToString(aa["Fsalenumber"]);
+                        // uy.linenumber = Convert.ToString(aa["Flinenumber"]);
+                        // uy.techcode = Convert.ToString(aa["Ftechcode"]);
+                        updatePrtList.Add(uy);
+                    }
+                }
+                return updatePrtList;
+            }
+            return null;
+        }
+        #endregion
         /// <summary>
         /// 判断操作结果是否成功，如果不成功，则直接抛错中断进程
         /// </summary>

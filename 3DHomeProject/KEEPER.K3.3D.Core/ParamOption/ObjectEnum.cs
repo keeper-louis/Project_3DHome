@@ -13,6 +13,7 @@ namespace KEEPER.K3._3D.Core.ParamOption
     {
         PurTransfer,//采购件调拨
         OPLAQual,//合格品工序汇报
-        OPLAUnQual//不合格品工序汇报
+        OPLAUnQual,//不合格品工序汇报
+        AlTransfer//直接调拨
     }
 }

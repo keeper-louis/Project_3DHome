@@ -68,15 +68,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Entity\SalOrder2DirectTrans.cs" />
+    <Compile Include="Entity\SalOrder2DirectTransList.cs" />
     <Compile Include="Entity\SalOrderTransfer.cs" />
     <Compile Include="Entity\SalOrderTransferList.cs" />
+    <Compile Include="Entity\UpdateAltableinEntity.cs" />
     <Compile Include="Entity\UpdatePrtableEntity.cs" />
     <Compile Include="ParamOption\ObjectEnum.cs" />
+    <Compile Include="ParamOption\UpdateAltableinEnum.cs" />
     <Compile Include="ParamOption\UpdatePrtableinEnum.cs" />
     <Compile Include="ParamOption\ConvertOption.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
