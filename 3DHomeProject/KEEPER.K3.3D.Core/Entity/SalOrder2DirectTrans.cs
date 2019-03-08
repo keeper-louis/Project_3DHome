@@ -52,6 +52,11 @@ namespace KEEPER.K3._3D.Core.Entity
             public long Lot { get; set; }
 
             /// <summary>
+            /// BOMid
+            /// </summary>
+            public string Fbomid { get; set; }
+
+            /// <summary>
             /// 数量
             /// </summary>
             public int amount { get; set; }

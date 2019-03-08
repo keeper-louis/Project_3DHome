@@ -1131,11 +1131,12 @@ namespace KEEPER.K3.APP
         #endregion
 
         #region 获取调拨数据集合
-        public SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status)
+        public SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus)
         {
-            if (status == UpdateAltableinEnum.BeforeSave)
+            
+            if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlInStock)
             {
-                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=1 order by fdate");
+                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=3 and ferrorstatus=0 order by fdate");
                 DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
                 if (dateData.Count() > 0)
                 {
@@ -1149,6 +1150,7 @@ namespace KEEPER.K3.APP
        orderentry.FMATERIALID,
        orderentry.FAUXPROPID,
        orderentry.FLOT,
+        orderentry.Fbomid,
        alt.amount,
        alt.Warehouseout,
 	   alt.Warehousein
@@ -1174,6 +1176,7 @@ namespace KEEPER.K3.APP
                             salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
                             salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                             salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
+                            salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
                             salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
@@ -1187,7 +1190,66 @@ namespace KEEPER.K3.APP
                     return null;
                 }
 
-            }else
+            }
+            if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlTransfer)
+            {
+                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=4 and ferrorstatus=0 order by fdate");
+                DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
+                if (dateData.Count() > 0)
+                {
+                    SalOrder2DirectTransList list = new SalOrder2DirectTransList();
+                    list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
+                    string strSql = string.Format(@"/*dialect*/select top 500 alt.fdate,
+       alt.id,
+       alt.salenumber,
+       alt.linenumber,
+       alt.Packcode,
+       orderentry.FMATERIALID,
+       orderentry.FAUXPROPID,
+       orderentry.FLOT,
+        orderentry.Fbomid,
+       alt.amount,
+       alt.Warehouseout,
+	   alt.Warehousein
+  from altablein alt
+ inner join t_sal_order salorder
+    on alt.salenumber = salorder.fbillno
+   and alt.status = 4
+ and alt.ferrorstatus=0
+ inner join t_sal_orderentry orderentry
+    on salorder.fid = orderentry.fid
+   and alt.linenumber = orderentry.fseq
+ where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
+                    DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
+                    List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
+                    foreach (DynamicObject purTransferData in PurTransferData)
+                    {
+                        SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
+                        salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
+                        salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
+                        salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
+                        salEntryData.lineNumber = Convert.ToString(purTransferData["linenumber"]);
+                        salEntryData.packcode = Convert.ToString(purTransferData["Packcode"]);
+                        salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
+                        salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
+                        salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
+                        salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
+                        salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                        salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
+                        salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
+                        salEntryDataList.Add(salEntryData);
+                    }
+                    list.SalOrder2DirectTrans = salEntryDataList;
+                    return list;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+
+            else
             {
                 return null;
             }
@@ -1197,10 +1259,24 @@ namespace KEEPER.K3.APP
         #region 判断是否有未处理过的调拨接口数据
         public bool isTransfer(Context ctx, ObjectEnum Obstatus, UpdateAltableinEnum status)
         {
-            if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.PurTransfer)
+            if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlInStock)
             {
                 //
                 string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=3  and alt.ferrorstatus=0");
+                int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
+                if (amount == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlTransfer)
+            {
+                //
+                string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=4  and alt.ferrorstatus=0");
                 int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
                 if (amount == 0)
                 {
@@ -1220,7 +1296,7 @@ namespace KEEPER.K3.APP
         }
         #endregion
         #region 更新Altablein表
-        public void updateAltableStatus(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdatePrtableEntity> uyList = null)
+        public void updateAltableStatus(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdateAltableinEntity> uyList = null)
         {
             if (status == UpdateAltableinEnum.AfterGetDate)
             {
@@ -1261,11 +1337,263 @@ namespace KEEPER.K3.APP
                 // 执行批量更新
                 Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
             }
+            if (status == UpdateAltableinEnum.AfterCreateModel)
+            {
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                DataTable dt = new DataTable();
+                dt.TableName = "altablein";
+                var idCol = dt.Columns.Add("id");
+                idCol.DataType = typeof(long);
+                var cloudid = dt.Columns.Add("fcloudid");
+                idCol.DataType = typeof(long);
+                var cloudheadid = dt.Columns.Add("fcloudheadid");
+                cloudheadid.DataType = typeof(long);
+                var cloudbillno = dt.Columns.Add("fbillno");
+                cloudbillno.DataType = typeof(string);
+                var subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                // 灌入测试数据
+                dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+                foreach (var item in uyList)
+                {
+                    dt.LoadDataRow(new object[] { item.altID, item.k3cloudID, item.k3cloudheadID, item.billNo, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                // 准备批量更新服务参数
+                // tableName : 待更新的物理表格名
+                // dt : 待更新的数据
+                BatchSqlParam batchUpdateParam = new BatchSqlParam("altablein", dt);
+
+                // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+                // 匹配字段可以添加多个
+                // columnName: DataTable中的列名
+                // fieldName : 物料表格中匹配的字段名
+                batchUpdateParam.AddWhereExpression("id", KDDbType.Int64, "id");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("fcloudid", KDDbType.Int64, "fcloudid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("fbillno", KDDbType.String, "fbillno");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+                // 执行批量更新
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+            }
+            if (status == UpdateAltableinEnum.AuditSucess)
+            {
+                int i=0;
+                if (Obstatus == ObjectEnum.AlInStock)
+                {
+                    i = 4;
+
+                }else if (Obstatus == ObjectEnum.AlTransfer)
+                {
+                    i = 5;
+                }
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                DataTable dt = new DataTable();
+                dt.TableName = "altablein";
+                var idCol = dt.Columns.Add("fcloudheadid");
+                idCol.DataType = typeof(long);
+                var statusCol = dt.Columns.Add("status");
+                statusCol.DataType = typeof(int);
+                var subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                // 灌入测试数据
+                dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+                foreach (var item in uyList)
+                {
+                    dt.LoadDataRow(new object[] { item.k3cloudheadID, i, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                // 准备批量更新服务参数
+                // tableName : 待更新的物理表格名
+                // dt : 待更新的数据
+                BatchSqlParam batchUpdateParam = new BatchSqlParam("altablein", dt);
+
+                // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+                // 匹配字段可以添加多个
+                // columnName: DataTable中的列名
+                // fieldName : 物料表格中匹配的字段名
+                batchUpdateParam.AddWhereExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+                // 执行批量更新
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+            }
+            if (status == UpdateAltableinEnum.AuditError)
+            {
+                int i=0;
+                if (Obstatus == ObjectEnum.AlInStock)
+                {
+                    i = 2;
+
+                }
+                else if (Obstatus == ObjectEnum.AlTransfer)
+                {
+                    i = 4;
+                }
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                DataTable dt = new DataTable();
+                dt.TableName = "altablein";
+                var idCol = dt.Columns.Add("fcloudheadid");
+                idCol.DataType = typeof(long);
+                var statusCol = dt.Columns.Add("status");
+                statusCol.DataType = typeof(int);
+                var errStatusCol = dt.Columns.Add("Ferrorstatus");
+                errStatusCol.DataType = typeof(int);
+                var errmsg = dt.Columns.Add("ferrormsg");
+                errmsg.DataType = typeof(string);
+                var subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                // 灌入测试数据
+                dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+                foreach (var item in uyList)
+                {
+                    dt.LoadDataRow(new object[] { item.k3cloudheadID, 2, i, item.errorMsg, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                // 准备批量更新服务参数
+                // tableName : 待更新的物理表格名
+                // dt : 待更新的数据
+                BatchSqlParam batchUpdateParam = new BatchSqlParam("altablein", dt);
+
+                // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+                // 匹配字段可以添加多个
+                // columnName: DataTable中的列名
+                // fieldName : 物料表格中匹配的字段名
+                batchUpdateParam.AddWhereExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Ferrorstatus", KDDbType.Int32, "Ferrorstatus");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("ferrormsg", KDDbType.String, "ferrormsg");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+                // 执行批量更新
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+            }
+            if (status == UpdateAltableinEnum.SaveError)
+            {
+                int i = 0;
+                if (Obstatus == ObjectEnum.AlInStock)
+                {
+                    i = 3;
+
+                }
+                else if (Obstatus == ObjectEnum.AlTransfer)
+                {
+                    i = 4;
+                }
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                DataTable dt = new DataTable();
+                dt.TableName = "altablein";
+                var idCol = dt.Columns.Add("id");
+                idCol.DataType = typeof(long);
+                var statusCol = dt.Columns.Add("status");
+                statusCol.DataType = typeof(int);
+                var subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                // 灌入测试数据
+                dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
+                foreach (long item in ids)
+                {
+                    dt.LoadDataRow(new object[] { item, i, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                // 准备批量更新服务参数
+                // tableName : 待更新的物理表格名
+                // dt : 待更新的数据
+                BatchSqlParam batchUpdateParam = new BatchSqlParam("altablein", dt);
+
+                // 设置匹配字段：即DataTable中的数据，与物理表格以那个字段进行匹配
+                // 匹配字段可以添加多个
+                // columnName: DataTable中的列名
+                // fieldName : 物料表格中匹配的字段名
+                batchUpdateParam.AddWhereExpression("id", KDDbType.Int64, "id");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
+                // 设置待更新的字段
+                // columnName: DataTable中的列名
+                // fieldName : 对应的物料表格字段名
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+                // 执行批量更新
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+                if (Obstatus == ObjectEnum.AlInStock)
+                {
+                    i = 1;
+
+                }
+                else if (Obstatus == ObjectEnum.AlTransfer)
+                {
+                    i = 3;
+                }
+                //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
+                dt = new DataTable();
+                dt.TableName = "altablein";
+                idCol = dt.Columns.Add("fcloudid");
+                idCol.DataType = typeof(long);
+                statusCol = dt.Columns.Add("status");
+                statusCol.DataType = typeof(int);
+                var errStatusCol = dt.Columns.Add("Ferrorstatus");
+                errStatusCol.DataType = typeof(int);
+                var errmsg = dt.Columns.Add("ferrormsg");
+                errmsg.DataType = typeof(string);
+                subdate = dt.Columns.Add("Fsubdate");
+                subdate.DataType = typeof(DateTime);
+                dt.BeginLoadData();   
+                foreach (var item in uyList)
+                {
+                    dt.LoadDataRow(new object[] { item.k3cloudID, 2, i, item.errorMsg, DateTime.Now }, true);
+                }
+                dt.EndLoadData();
+                batchUpdateParam = new BatchSqlParam("altablein", dt);
+
+                batchUpdateParam.AddWhereExpression("fcloudid", KDDbType.Int64, "fcloudid");
+
+                batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
+ 
+                batchUpdateParam.AddSetExpression("Ferrorstatus", KDDbType.Int32, "Ferrorstatus");
+
+                batchUpdateParam.AddSetExpression("ferrormsg", KDDbType.String, "ferrormsg");
+  
+                batchUpdateParam.AddSetExpression("Fsubdate", KDDbType.DateTime, "Fsubdate");
+
+                Kingdee.BOS.App.Data.DBUtils.BatchUpdate(ctx, batchUpdateParam);
+            }
+           
         }
         #endregion
         #region 构建更新调拨接口数据包集合
-        public List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill ,string formId)
+        public List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill = null, IOperationResult vo = null, List<UpdateAltableinEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null, long k3cloudheadid = 0, string billnos = "", string formId = "")
         {
+            //调拨接口简单生产入库AfterCreateModel
             if (status == UpdateAltableinEnum.AfterCreateModel)
             {
                 List<UpdateAltableinEntity> updatePrtList = new List<UpdateAltableinEntity>();
@@ -1288,7 +1616,152 @@ namespace KEEPER.K3.APP
                 }
                 return updatePrtList;
             }
+            //调拨接口简单生产入库AuditSucess
+            if (status == UpdateAltableinEnum.AuditSucess)
+            {
+                UpdateAltableinEntity uy = new UpdateAltableinEntity();
+                object[] ids = (from c in auditResult.SuccessDataEnity
+                                select c[0]).ToArray();
+                uy.k3cloudheadID = Convert.ToInt64(ids[0]);//pk
+                exceptPrtList.Add(uy);
+                return exceptPrtList;
+            }
+            //调拨接口简单生产入库AuditError
+            if (status == UpdateAltableinEnum.AuditError)
+            {
+                if (submitResult != null)
+                {
+                    UpdateAltableinEntity uy = new UpdateAltableinEntity();
+                    uy.k3cloudheadID = Convert.ToInt64(submitResult["Id"]);//pk
+                    uy.errorMsg = Convert.ToString(submitResult["BillNo"]) + auditResult.InteractionContext.SimpleMessage;
+                    exceptPrtList.Add(uy);
+                    return exceptPrtList;
+                }
+                else
+                {
+                    UpdateAltableinEntity uy = new UpdateAltableinEntity();
+                    uy.k3cloudheadID = k3cloudheadid;
+                    uy.errorMsg = billnos + auditResult.InteractionContext.SimpleMessage;
+                    exceptPrtList.Add(uy);
+                    return exceptPrtList;
+                }
+
+            }
+            //调拨接口简单生产入库SaveError
+            if (status == UpdateAltableinEnum.SaveError)
+            {
+                List<UpdateAltableinEntity> updatePrtList = new List<UpdateAltableinEntity>();
+                foreach (ValidationErrorInfo item in vo.ValidationErrors)
+                {
+                    UpdateAltableinEntity uy = new UpdateAltableinEntity();
+                    uy.k3cloudID = Convert.ToInt64(item.BillPKID);
+                    uy.errorMsg = item.Message;
+                    updatePrtList.Add(uy);
+                }
+                return updatePrtList;
+            }
+            
             return null;
+        }
+        #endregion
+        #region 调拨错误信息表插入
+        public void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus)
+        {
+            //简单生产入库保存错误写入
+            if (status == UpdateAltableinEnum.SaveError && Obstatus == ObjectEnum.AlInStock)
+            {
+                string strSql = string.Format(@"/*dialect*/insert into Allocationtable
+  select altablein.id FBILLNO,
+         'A' FDOCUMENTSTATUS,
+         altablein.salenumber salenumber,
+         altablein.linenumber linenumber,
+         altablein.Packcode Packcode,
+         altablein.id Altableinid,
+		 case when altablein.ferrormsg is null then ''
+		 else altablein.ferrormsg end REASON,
+         altablein.fdate FDATE,
+         getdate() FSUBDATE
+    from altablein
+   where  altablein.Ferrorstatus = 1
+     and altablein.status = 2
+     and not exists
+   (select 1
+            from Allocationtable
+           where Allocationtable.FBILLNO = altablein.id)");
+                DBUtils.Execute(ctx, strSql);
+            }
+            //简单生产入库审核错误写入
+            if (status == UpdateAltableinEnum.AuditError && Obstatus == ObjectEnum.AlInStock)
+            {
+                string strSql = string.Format(@"/*dialect*//*dialect*/insert into Allocationtable
+  select altablein.id FBILLNO,
+         'A' FDOCUMENTSTATUS,
+         altablein.salenumber salenumber,
+         altablein.linenumber linenumber,
+         altablein.Packcode Packcode,
+         altablein.id Altableinid,
+		 case when altablein.ferrormsg is null then ''
+		 else altablein.ferrormsg end REASON,
+         altablein.fdate FDATE,
+         getdate() FSUBDATE
+    from altablein
+   where  altablein.Ferrorstatus = 2
+     and altablein.status = 2
+     and not exists
+   (select 1
+            from Allocationtable
+           where Allocationtable.FBILLNO = altablein.id)");
+                DBUtils.Execute(ctx, strSql);
+            }
+
+            //直接调拨单保存错误写入
+            if (status == UpdateAltableinEnum.SaveError && Obstatus == ObjectEnum.AlTransfer)
+            {
+                string strSql = string.Format(@"/*dialect*/insert into Allocationtable
+  select altablein.id FBILLNO,
+         'A' FDOCUMENTSTATUS,
+         altablein.salenumber salenumber,
+         altablein.linenumber linenumber,
+         altablein.Packcode Packcode,
+         altablein.id Altableinid,
+		 case when altablein.ferrormsg is null then ''
+		 else altablein.ferrormsg end REASON,
+         altablein.fdate FDATE,
+         getdate() FSUBDATE
+    from altablein
+   where  altablein.Ferrorstatus = 3
+     and altablein.status = 2
+     and not exists
+   (select 1
+            from Allocationtable
+           where Allocationtable.FBILLNO = altablein.id)");
+                DBUtils.Execute(ctx, strSql);
+            }
+            //直接调拨单审核错误写入
+            if (status == UpdateAltableinEnum.AuditError && Obstatus == ObjectEnum.AlTransfer)
+            {
+                string strSql = string.Format(@"/*dialect*//*dialect*/insert into Allocationtable
+  select altablein.id FBILLNO,
+         'A' FDOCUMENTSTATUS,
+         altablein.salenumber salenumber,
+         altablein.linenumber linenumber,
+         altablein.Packcode Packcode,
+         altablein.id Altableinid,
+		 case when altablein.ferrormsg is null then ''
+		 else altablein.ferrormsg end REASON,
+         altablein.fdate FDATE,
+         getdate() FSUBDATE
+    from altablein
+   where  altablein.Ferrorstatus = 4
+     and altablein.status = 2
+     and not exists
+   (select 1
+            from Allocationtable
+           where Allocationtable.FBILLNO = altablein.id)");
+                DBUtils.Execute(ctx, strSql);
+            }
+
+
         }
         #endregion
         /// <summary>

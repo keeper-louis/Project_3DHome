@@ -167,7 +167,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status);
+        SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus);
         /// <summary>
         /// 判断是否继续进入直接调拨计划
         /// </summary>
@@ -185,7 +185,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <param name="uyList">更新数据包实体集合</param>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        void updateAltableStatus(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdatePrtableEntity> uyList = null);
+        void updateAltableStatus(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdateAltableinEntity> uyList = null);
         /// <summary>
         /// 组装更新调拨接口数据包实体
         /// </summary>
@@ -196,7 +196,15 @@ namespace KEEPER.K3._3D.Contracts
         /// <returns></returns>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill, string formId);
-
+        List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill = null, IOperationResult vo = null, List<UpdateAltableinEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null, long k3cloudheadid = 0, string billnos = "", string formId = "");
+        
+        /// <summary>
+        /// 将调拨错误信息插入错误信息表中
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="status">不同状态更新枚举</param>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus);
     }
 }

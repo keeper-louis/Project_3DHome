@@ -30,18 +30,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="KEEPER.K3.3D.3DServiceHelper">
-      <HintPath>C:\Program Files (x86)\Kingdee\K3Cloud\WebSite\bin\KEEPER.K3.3D.3DServiceHelper.dll</HintPath>
-    </Reference>
-    <Reference Include="KEEPER.K3.3D.Contracts">
-      <HintPath>C:\Program Files (x86)\Kingdee\K3Cloud\WebSite\bin\KEEPER.K3.3D.Contracts.dll</HintPath>
-    </Reference>
-    <Reference Include="KEEPER.K3.3D.Core">
-      <HintPath>C:\Program Files (x86)\Kingdee\K3Cloud\WebSite\bin\KEEPER.K3.3D.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="KEEPER.K3.APP">
-      <HintPath>C:\Program Files (x86)\Kingdee\K3Cloud\WebSite\bin\KEEPER.K3.APP.dll</HintPath>
-    </Reference>
     <Reference Include="Kingdee.BOS">
       <HintPath>..\..\..\..\WorkSpace\3DHome\K3Cloud\bin\Kingdee.BOS.dll</HintPath>
     </Reference>
@@ -88,8 +76,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AllocationSAVE.cs" />
+    <Compile Include="AllocationSave.cs" />
+    <Compile Include="InStockSAVE.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\KEEPER.K3.3D.3DServiceHelper\KEEPER.K3.3D.3DServiceHelper.csproj">
+      <Project>{219FCD84-2801-44DA-8D6E-0BA8C377058E}</Project>
+      <Name>KEEPER.K3.3D.3DServiceHelper</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\KEEPER.K3.3D.Core\KEEPER.K3.3D.Core.csproj">
+      <Project>{7108D146-9EED-4C0D-9F2C-68FAC906D9C0}</Project>
+      <Name>KEEPER.K3.3D.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -124,25 +124,30 @@ namespace KEEPER.K3._3D._3DServiceHelper
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
             return service.InstallUpdatePackage(ctx, status, Obstatus, trasferbill, vo, exceptPrtList, auditResult, submitResult,k3cloudheadid,billno,formid);
         }
-        public static SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status)
+        public static SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            return service.getALSaveData(ctx, status);
+            return service.getALSaveData(ctx, status, Obstatus);
         }
         public static Boolean isTransfer(Context ctx, ObjectEnum Obstatus, UpdateAltableinEnum status)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
             return service.isTransfer(ctx, Obstatus, status);
         }
-        public static void updateAltableStatus(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdatePrtableEntity> uyList = null)
+        public static void updateAltableStatus(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdateAltableinEntity> uyList = null)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
             service.updateAltableStatus(ctx, status, Obstatus, ids, uyList);
         }
-        public static List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill,string formId)
+        public static List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill = null, IOperationResult vo = null, List<UpdateAltableinEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null, long k3cloudheadid = 0, string billno = "", string formid = "")
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            return service.InstallUpdateAlPackage(ctx, status, Obstatus, trasferbill,formId);
+            return service.InstallUpdateAlPackage(ctx, status, Obstatus, trasferbill, vo, exceptPrtList, auditResult, submitResult, k3cloudheadid, billno, formid);
+        }
+        public static void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            service.insertAllocationtableTable(ctx, status, Obstatus);
         }
     }
 }
