@@ -76,6 +76,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ALErrorInfoBill.cs" />
     <Compile Include="ErrorInfoBill.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

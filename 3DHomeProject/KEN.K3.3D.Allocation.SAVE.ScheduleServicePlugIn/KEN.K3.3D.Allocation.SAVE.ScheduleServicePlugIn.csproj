@@ -79,6 +79,7 @@
     <Compile Include="AllocationSave.cs" />
     <Compile Include="InStockSAVE.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="AlPurTransfer.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\KEEPER.K3.3D.3DServiceHelper\KEEPER.K3.3D.3DServiceHelper.csproj">

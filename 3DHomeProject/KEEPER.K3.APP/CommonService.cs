@@ -1136,7 +1136,7 @@ namespace KEEPER.K3.APP
             
             if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlInStock)
             {
-                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=3 and ferrorstatus=0 order by fdate");
+                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=3 and isPur is null and ferrorstatus=0 order by fdate");
                 DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
                 if (dateData.Count() > 0)
                 {
@@ -1158,6 +1158,7 @@ namespace KEEPER.K3.APP
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
    and alt.status = 3
+and alt.isPur is null
  and alt.ferrorstatus=0
  inner join t_sal_orderentry orderentry
     on salorder.fid = orderentry.fid
@@ -1248,6 +1249,64 @@ namespace KEEPER.K3.APP
                 }
 
             }
+            if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlPurTransfer)
+            {
+                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=3 and isPur=1 and ferrorstatus=0 order by fdate");
+                DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
+                if (dateData.Count() > 0)
+                {
+                    SalOrder2DirectTransList list = new SalOrder2DirectTransList();
+                    list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
+                    string strSql = string.Format(@"/*dialect*/select top 500 alt.fdate,
+       alt.id,
+       alt.salenumber,
+       alt.linenumber,
+       alt.Packcode,
+       orderentry.FMATERIALID,
+       orderentry.FAUXPROPID,
+       orderentry.FLOT,
+        orderentry.Fbomid,
+       alt.amount,
+        alt.PurStockId Warehouseout,
+	   alt.Warehouseout Warehousein
+  from altablein alt
+ inner join t_sal_order salorder
+    on alt.salenumber = salorder.fbillno
+   and alt.status = 3
+and alt.isPur=1
+ and alt.ferrorstatus=0
+ inner join t_sal_orderentry orderentry
+    on salorder.fid = orderentry.fid
+   and alt.linenumber = orderentry.fseq
+ where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
+                    DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
+                    List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
+                    foreach (DynamicObject purTransferData in PurTransferData)
+                    {
+                        SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
+                        salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
+                        salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
+                        salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
+                        salEntryData.lineNumber = Convert.ToString(purTransferData["linenumber"]);
+                        salEntryData.packcode = Convert.ToString(purTransferData["Packcode"]);
+                        salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
+                        salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
+                        salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
+                        salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
+                        salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                        salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
+                        salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
+                        salEntryDataList.Add(salEntryData);
+                    }
+                    list.SalOrder2DirectTrans = salEntryDataList;
+                    return list;
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
 
             else
             {
@@ -1262,7 +1321,7 @@ namespace KEEPER.K3.APP
             if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlInStock)
             {
                 //
-                string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=3  and alt.ferrorstatus=0");
+                string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=3  and alt.isPur<>1 and alt.ferrorstatus=0");
                 int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
                 if (amount == 0)
                 {
@@ -1277,6 +1336,20 @@ namespace KEEPER.K3.APP
             {
                 //
                 string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=4  and alt.ferrorstatus=0");
+                int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
+                if (amount == 0)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlPurTransfer)
+            {
+                //
+                string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=3 and alt.isPur is null and alt.ferrorstatus=0");
                 int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
                 if (amount == 0)
                 {
@@ -1391,7 +1464,7 @@ namespace KEEPER.K3.APP
             if (status == UpdateAltableinEnum.AuditSucess)
             {
                 int i=0;
-                if (Obstatus == ObjectEnum.AlInStock)
+                if (Obstatus == ObjectEnum.AlInStock|| Obstatus == ObjectEnum.AlPurTransfer)
                 {
                     i = 4;
 
@@ -1448,6 +1521,10 @@ namespace KEEPER.K3.APP
                 {
                     i = 4;
                 }
+                else if (Obstatus == ObjectEnum.AlPurTransfer)
+                {
+                    i = 6;
+                }
                 //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
                 DataTable dt = new DataTable();
                 dt.TableName = "altablein";
@@ -1500,7 +1577,7 @@ namespace KEEPER.K3.APP
             if (status == UpdateAltableinEnum.SaveError)
             {
                 int i = 0;
-                if (Obstatus == ObjectEnum.AlInStock)
+                if (Obstatus == ObjectEnum.AlInStock|| Obstatus == ObjectEnum.AlPurTransfer)
                 {
                     i = 3;
 
@@ -1554,6 +1631,10 @@ namespace KEEPER.K3.APP
                 {
                     i = 3;
                 }
+                else if (Obstatus == ObjectEnum.AlPurTransfer)
+                {
+                    i = 5;
+                }
                 //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
                 dt = new DataTable();
                 dt.TableName = "altablein";
@@ -1593,7 +1674,7 @@ namespace KEEPER.K3.APP
         #region 构建更新调拨接口数据包集合
         public List<UpdateAltableinEntity> InstallUpdateAlPackage(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill = null, IOperationResult vo = null, List<UpdateAltableinEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null, long k3cloudheadid = 0, string billnos = "", string formId = "")
         {
-            //调拨接口简单生产入库AfterCreateModel
+            //调拨接口AfterCreateModel
             if (status == UpdateAltableinEnum.AfterCreateModel)
             {
                 List<UpdateAltableinEntity> updatePrtList = new List<UpdateAltableinEntity>();
@@ -1616,7 +1697,7 @@ namespace KEEPER.K3.APP
                 }
                 return updatePrtList;
             }
-            //调拨接口简单生产入库AuditSucess
+            //调拨接口AuditSucess
             if (status == UpdateAltableinEnum.AuditSucess)
             {
                 UpdateAltableinEntity uy = new UpdateAltableinEntity();
@@ -1626,7 +1707,7 @@ namespace KEEPER.K3.APP
                 exceptPrtList.Add(uy);
                 return exceptPrtList;
             }
-            //调拨接口简单生产入库AuditError
+            //调拨接口AuditError
             if (status == UpdateAltableinEnum.AuditError)
             {
                 if (submitResult != null)
@@ -1647,7 +1728,7 @@ namespace KEEPER.K3.APP
                 }
 
             }
-            //调拨接口简单生产入库SaveError
+            //调拨接口SaveError
             if (status == UpdateAltableinEnum.SaveError)
             {
                 List<UpdateAltableinEntity> updatePrtList = new List<UpdateAltableinEntity>();
@@ -1753,6 +1834,53 @@ namespace KEEPER.K3.APP
          getdate() FSUBDATE
     from altablein
    where  altablein.Ferrorstatus = 4
+     and altablein.status = 2
+     and not exists
+   (select 1
+            from Allocationtable
+           where Allocationtable.FBILLNO = altablein.id)");
+                DBUtils.Execute(ctx, strSql);
+            }
+
+            //采购件直接调拨单保存错误写入
+            if (status == UpdateAltableinEnum.SaveError && Obstatus == ObjectEnum.AlPurTransfer)
+            {
+                string strSql = string.Format(@"/*dialect*/insert into Allocationtable
+  select altablein.id FBILLNO,
+         'A' FDOCUMENTSTATUS,
+         altablein.salenumber salenumber,
+         altablein.linenumber linenumber,
+         altablein.Packcode Packcode,
+         altablein.id Altableinid,
+		 case when altablein.ferrormsg is null then ''
+		 else altablein.ferrormsg end REASON,
+         altablein.fdate FDATE,
+         getdate() FSUBDATE
+    from altablein
+   where  altablein.Ferrorstatus = 5
+     and altablein.status = 2
+     and not exists
+   (select 1
+            from Allocationtable
+           where Allocationtable.FBILLNO = altablein.id)");
+                DBUtils.Execute(ctx, strSql);
+            }
+            //采购件直接调拨单审核错误写入
+            if (status == UpdateAltableinEnum.AuditError && Obstatus == ObjectEnum.AlPurTransfer)
+            {
+                string strSql = string.Format(@"/*dialect*//*dialect*/insert into Allocationtable
+  select altablein.id FBILLNO,
+         'A' FDOCUMENTSTATUS,
+         altablein.salenumber salenumber,
+         altablein.linenumber linenumber,
+         altablein.Packcode Packcode,
+         altablein.id Altableinid,
+		 case when altablein.ferrormsg is null then ''
+		 else altablein.ferrormsg end REASON,
+         altablein.fdate FDATE,
+         getdate() FSUBDATE
+    from altablein
+   where  altablein.Ferrorstatus = 6
      and altablein.status = 2
      and not exists
    (select 1

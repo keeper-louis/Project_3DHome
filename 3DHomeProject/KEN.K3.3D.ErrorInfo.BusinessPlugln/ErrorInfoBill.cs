@@ -16,7 +16,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
 {
     public class ErrorInfoBill : AbstractListPlugIn
     {
-        [Description("错误信息表列表插件")]
+        [Description("汇报接口错误信息表列表插件")]
 
         public override void BarItemClick(BarItemClickEventArgs e)
         {

@@ -88,6 +88,39 @@ select Salenumber,Linenumber,Packcode,min(Scantime) Scantime from altable group 
         private void checkData(Context ctx)
         {
 
+
+
+            //标识采购件
+            string strSql = string.Format(@"/*dialect*/   update altablein set isPur=1
+ from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_Material t_BD_Material
+ where tso.fid = tsoe.FID and altablein.Linenumber = tsoe.FSEQ and altablein.Salenumber = tso.FBILLNO
+ and t_BD_Material.FMATERIALID = tsoe.FMATERIALID
+and tsoe.FMATERIALID in (select tbm.FMATERIALID
+from t_BD_MaterialBase tbmb, t_BD_Material tbm
+ where FCATEGORYID = '237' and tbm.FMATERIALID = tbmb.FMATERIALID) and altablein.isPur is null and altablein.status=0");
+            DBUtils.Execute(ctx, strSql);
+
+            //标识采购件仓库
+            strSql = string.Format(@"/*dialect*/ update altablein set PurStockId=a.FNUMBER from (
+select distinct tbs.FNUMBER,pr.salenumber,pr.linenumber from T_SAL_ORDER tso,  
+T_SAL_ORDERENTRY tsoe,altablein pr  ,Purchase2Stock ps,t_BD_Stock tbs
+where tso.fid=tsoe.FID and pr.Linenumber=tsoe.FSEQ and pr.Salenumber=tso.FBILLNO and tsoe.FMATERIALID=ps.FMATERIAL and tbs.FSTOCKID=ps.FSTOCK and pr.isPur=1
+and pr.status=0
+ ) a where altablein.salenumber=a.salenumber and altablein.linenumber=a.linenumber");
+            DBUtils.Execute(ctx, strSql);
+
+            //查询没有对应仓库的采购件 写入错误信息表
+            strSql = string.Format(@"/*dialect*/ insert into  Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER,pr.linenumber LINENUMBER,pr.Packcode Packcode,id PRTABLEINID,
+'采购件无对应仓库' REASON,fdate FDATE,getdate() FSUBDATE from altablein pr where pr.status=0 and pr.PurStockId is null and pr.isPur=1");
+            DBUtils.Execute(ctx, strSql);
+            //把采购件无对应仓库的数据 status标识为2
+            strSql = string.Format(@"/*dialect*/update altablein set status=2 where  altablein.status=0 and altablein.PurStockId is null and altablein.isPur=1 ");
+            DBUtils.Execute(ctx, strSql);
+
+            //标识为预检完成状态
+            strSql = string.Format(@"/*dialect*/ update altablein set status=3 where  status=0  ");
+            DBUtils.Execute(ctx, strSql);
+
         }
     }
 }
