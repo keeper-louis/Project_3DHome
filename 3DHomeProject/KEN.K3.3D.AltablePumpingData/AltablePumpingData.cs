@@ -78,7 +78,7 @@ select Salenumber,Linenumber,Packcode,min(Scantime) Scantime from altable group 
             DBUtils.Execute(ctx, strSql);
 
             //把接口数据表中status为0的数据（未插入到待录入表的数据状态） sum数量 插入到 待录入表临时表Altabletemp
-            strSql = @"/*dialect*/ insert into altablein select * from altable where status=0";
+            strSql = @"/*dialect*/insert into altablein select Salenumber,Linenumber,Packcode,Amount,Warehouseout,Warehousein,[Procedure],status,Scantime,fdate,Fsubdate,0,'','','','',0,'' from altable where status=0";
             DBUtils.Execute(ctx, strSql);
 
             //把接口数据表中status全置为1 （已插入到待录入表的数据状态）
@@ -87,17 +87,19 @@ select Salenumber,Linenumber,Packcode,min(Scantime) Scantime from altable group 
         }
         private void checkData(Context ctx)
         {
-
+            //五金件标识为4 准备调拨状态
+            string strSql = string.Format(@"/*dialect*/update altablein set status=4 where Warehouseout='7.01' and status=0");
+            DBUtils.Execute(ctx, strSql);
 
 
             //标识采购件
-            string strSql = string.Format(@"/*dialect*/   update altablein set isPur=1
+            strSql = string.Format(@"/*dialect*/   update altablein set isPur=1
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_Material t_BD_Material
  where tso.fid = tsoe.FID and altablein.Linenumber = tsoe.FSEQ and altablein.Salenumber = tso.FBILLNO
  and t_BD_Material.FMATERIALID = tsoe.FMATERIALID
 and tsoe.FMATERIALID in (select tbm.FMATERIALID
 from t_BD_MaterialBase tbmb, t_BD_Material tbm
- where FCATEGORYID = '237' and tbm.FMATERIALID = tbmb.FMATERIALID) and altablein.isPur is null and altablein.status=0");
+ where FCATEGORYID = '237' and tbm.FMATERIALID = tbmb.FMATERIALID) and altablein.isPur=0 and altablein.status=0");
             DBUtils.Execute(ctx, strSql);
 
             //标识采购件仓库
@@ -111,13 +113,13 @@ and pr.status=0
 
             //查询没有对应仓库的采购件 写入错误信息表
             strSql = string.Format(@"/*dialect*/ insert into  Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER,pr.linenumber LINENUMBER,pr.Packcode Packcode,id PRTABLEINID,
-'采购件无对应仓库' REASON,fdate FDATE,getdate() FSUBDATE from altablein pr where pr.status=0 and pr.PurStockId is null and pr.isPur=1");
+'采购件无对应仓库' REASON,fdate FDATE,getdate() FSUBDATE from altablein pr where pr.status=0 and pr.PurStockId is null and pr.isPur=1 ");
             DBUtils.Execute(ctx, strSql);
             //把采购件无对应仓库的数据 status标识为2
-            strSql = string.Format(@"/*dialect*/update altablein set status=2 where  altablein.status=0 and altablein.PurStockId is null and altablein.isPur=1 ");
+            strSql = string.Format(@"/*dialect*/update altablein set status=2, ferrormsg='采购件无对应仓库' where  altablein.status=0 and altablein.PurStockId is null and altablein.isPur=1 and altablein.Warehouseout<>'7.01' ");
             DBUtils.Execute(ctx, strSql);
 
-            //标识为预检完成状态
+            //标识为 3 预检完成准备入库状态
             strSql = string.Format(@"/*dialect*/ update altablein set status=3 where  status=0  ");
             DBUtils.Execute(ctx, strSql);
 

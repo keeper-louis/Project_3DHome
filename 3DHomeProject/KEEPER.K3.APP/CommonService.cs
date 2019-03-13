@@ -1158,7 +1158,7 @@ namespace KEEPER.K3.APP
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
    and alt.status = 3
-and alt.isPur is null
+and alt.isPur=0
  and alt.ferrorstatus=0
  inner join t_sal_orderentry orderentry
     on salorder.fid = orderentry.fid
@@ -1321,7 +1321,7 @@ and alt.isPur=1
             if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlInStock)
             {
                 //
-                string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=3  and alt.isPur<>1 and alt.ferrorstatus=0");
+                string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=3  and alt.isPur=0 and alt.ferrorstatus=0");
                 int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
                 if (amount == 0)
                 {
@@ -1349,7 +1349,7 @@ and alt.isPur=1
             if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlPurTransfer)
             {
                 //
-                string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=3 and alt.isPur is null and alt.ferrorstatus=0");
+                string strSql = string.Format(@"/*dialect*/select count(*) from altablein alt where alt.status=3 and alt.isPur=1 and alt.ferrorstatus=0");
                 int amount = DBUtils.ExecuteScalar<int>(ctx, strSql, 0, null);
                 if (amount == 0)
                 {
