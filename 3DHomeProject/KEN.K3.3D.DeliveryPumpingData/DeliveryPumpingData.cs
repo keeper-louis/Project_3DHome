@@ -97,41 +97,45 @@ where detablein.salenumber=prt.Salenumber and detablein.linenumber=prt.Linenumbe
             DBUtils.Execute(ctx, strSql);
 
             //查询无上游单据数据 写入错误信息表
-            strSql = string.Format(@"/*dialect*/INSERT INTO Processtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,technicscode TECHNICSCODE,id PRTABLEINID,
-'无上游单据' REASON,state STATE,fdate FDATE,getdate() FSUBDATE from  Prtablein 
- where not EXISTS (select  tso.FSALEORDERNUMBER,tso.FSALEORDERENTRYSEQ
- from T_SFC_OPERPLANNING tso , T_SFC_OPERPLANNINGDETAIL tsod ,T_SFC_OPERPLANNINGDETAIL_B tsodb
- where tsodb.FDETAILID=tsod.FDETAILID and tso.fid=tsodb.FENTRYID 
-and Linenumber=tso.FSALEORDERENTRYSEQ and Salenumber=tso.FSALEORDERNUMBER and technicscode=tsod.FOperNumber ) and State<>3 and status=0
+            strSql = string.Format(@"/*dialect*/INSERT INTO Deliverytable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,id PRTABLEINID,
+'无对应销售订单' REASON,fdate FDATE,getdate() FSUBDATE from detablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where de.status=0 and (a.fid is null or a.FDETAILID is null)
 ");
             DBUtils.Execute(ctx, strSql);
             //把无上游单据status标识为2
-            strSql = string.Format(@"/*dialect*/update Prtablein set status=2
- where not EXISTS (select  tso.FSALEORDERNUMBER,tso.FSALEORDERENTRYSEQ
- from T_SFC_OPERPLANNING tso , T_SFC_OPERPLANNINGDETAIL tsod ,T_SFC_OPERPLANNINGDETAIL_B tsodb
- where tsodb.FDETAILID=tsod.FDETAILID and tso.fid=tsodb.FENTRYID 
-and Linenumber=tso.FSALEORDERENTRYSEQ and Salenumber=tso.FSALEORDERNUMBER and technicscode=tsod.FOperNumber ) and State<>3 and status=0");
+            strSql = string.Format(@"/*dialect*/update detablein set status=2,ferrormsg='无对应销售订单' from 
+(select de.id from detablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where de.status=0 and (a.fid is null or a.FDETAILID is null) ) b where  detablein.id=b.id");
             DBUtils.Execute(ctx, strSql);
-            //查询汇报数量大于工序计划单中可汇报数量的数据  写入错误信息表
-            strSql = string.Format(@"/*dialect*/INSERT INTO Processtable select id FBILLNO,'A' FDOCUMENTSTATUS, Prtablein.salenumber SALENUMBER,Prtablein.linenumber LINENUMBER,Prtablein.technicscode TECHNICSCODE,id PRTABLEINID,
-'大于可汇报数量' REASON,state STATE,fdate FDATE,getdate() FSUBDATE  from Prtablein ,
- (select a.Salenumber,a.Linenumber,a.Technicscode 
- from (select Salenumber,Linenumber,Technicscode,sum(Amount) amount from Prtablein where status<>2 and status<>4 group by  Salenumber,Linenumber,Technicscode) a,
-  (select  tso.FSALEORDERNUMBER salenumber,tso.FSALEORDERENTRYSEQ linenumber,tsod.FOPERNUMBER technicscode,(FOPERQTY-FREPORTBASEQTY) amount
- from T_SFC_OPERPLANNING tso, T_SFC_OPERPLANNINGDETAIL tsod ,T_SFC_OPERPLANNINGDETAIL_B tsodb
- where tsodb.FDETAILID=tsod.FDETAILID
- and tso.fid=tsodb.FENTRYID )b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.Technicscode=b.technicscode and a.amount>b.amount) c
- where Prtablein.Salenumber=c.Salenumber and Prtablein.Linenumber=c.Linenumber and Prtablein.Technicscode=c.Technicscode and Prtablein.status=0");
+            //查询出库数量大于销售订单中可出库数量的数据  写入错误信息表
+            strSql = string.Format(@"/*dialect*/insert into Deliverytable
+select id FBILLNO,'A' FDOCUMENTSTATUS, detablein.salenumber SALENUMBER,detablein.linenumber LINENUMBER,id PRTABLEINID,
+'大于可出库数量' REASON,fdate FDATE,getdate() FSUBDATE from detablein ,
+ (select a.Salenumber,a.Linenumber
+ from (select Salenumber,Linenumber,sum(Amount) amount from detablein where status=0 group by  Salenumber,Linenumber) a,
+  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FRemainOutQty amount
+ from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
+where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  )b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount) c
+ where detablein.Salenumber=c.Salenumber and detablein.Linenumber=c.Linenumber  and detablein.status=0 ");
             DBUtils.Execute(ctx, strSql);
-            //把汇报数量大于工序计划单中可汇报数量的数据status标识为2
-            strSql = string.Format(@"/*dialect*/ update Prtablein set status=2 from
- (select a.Salenumber,a.Linenumber,a.Technicscode 
- from (select Salenumber,Linenumber,Technicscode,sum(Amount) amount from Prtablein where status<>2 and status<>4  group by  Salenumber,Linenumber,Technicscode) a,
-  (select  tso.FSALEORDERNUMBER salenumber,tso.FSALEORDERENTRYSEQ linenumber,tsod.FOPERNUMBER technicscode,(FOPERQTY-FREPORTBASEQTY) amount
- from T_SFC_OPERPLANNING tso, T_SFC_OPERPLANNINGDETAIL tsod ,T_SFC_OPERPLANNINGDETAIL_B tsodb
- where tsodb.FDETAILID=tsod.FDETAILID
- and tso.fid=tsodb.FENTRYID )b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.Technicscode=b.technicscode and a.amount>b.amount) c
- where Prtablein.Salenumber=c.Salenumber and Prtablein.Linenumber=c.Linenumber and Prtablein.Technicscode=c.Technicscode and Prtablein.status=0");
+            //把出库数量大于销售订单中可出库数量的数据 status标识为2
+            strSql = string.Format(@"/*dialect*/ update detablein set status=2 ,ferrormsg='大于可出库数量' from
+ (select a.Salenumber,a.Linenumber
+ from (select Salenumber,Linenumber,sum(Amount) amount from detablein where status=0 group by  Salenumber,Linenumber) a,
+  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FRemainOutQty amount
+ from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
+where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  )b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount) c
+ where detablein.Salenumber=c.Salenumber and detablein.Linenumber=c.Linenumber  and detablein.status=0 ");
+            DBUtils.Execute(ctx, strSql);
+
+            //把剩余status=0的数据置为3 预检完成
+            strSql = string.Format(@"/*dialect*/update detablein set status = 3 where detablein.status = 0 ");
             DBUtils.Execute(ctx, strSql);
         }
     }

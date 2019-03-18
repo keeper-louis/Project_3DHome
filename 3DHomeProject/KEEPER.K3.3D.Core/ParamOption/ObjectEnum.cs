@@ -16,7 +16,8 @@ namespace KEEPER.K3._3D.Core.ParamOption
         OPLAUnQual,//不合格品工序汇报
         AlPurTransfer,//直接调拨接口采购件调拨
         AlInStock,//直接调拨接口简单生产入库
-        AlTransfer//直接调拨接口直接调拨
+        AlTransfer,//直接调拨接口直接调拨
+        SO2DE//销售订单下推销售出库
 
     }
 }

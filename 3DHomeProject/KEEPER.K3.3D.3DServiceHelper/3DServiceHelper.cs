@@ -149,5 +149,23 @@ namespace KEEPER.K3._3D._3DServiceHelper
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
             service.insertAllocationtableTable(ctx, status, Obstatus);
         }
+        public static void updateDetableStatus(Context ctx, UpdatePrtableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdatePrtableEntity> uyList = null)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            service.updateDetableStatus(ctx, status, Obstatus, ids, uyList);
+        }
+
+        public static DynamicObject[] ConvertOutStockBills(Context ctx, List<ConvertOption> option, string SourceFormId, string TargetFormId, string SourceEntryEntityKey)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.ConvertOutStockBills(ctx, option, SourceFormId, TargetFormId, SourceEntryEntityKey);
+        }
+        public static List<UpdatePrtableEntity> InstallUpdateDePackage(Context ctx, UpdatePrtableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null, long k3cloudheadid = 0, string billno = "", string formid = "")
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.InstallUpdateDePackage(ctx, status, Obstatus, trasferbill, vo, exceptPrtList, auditResult, submitResult, k3cloudheadid, billno, formid);
+        }
+
+
     }
 }

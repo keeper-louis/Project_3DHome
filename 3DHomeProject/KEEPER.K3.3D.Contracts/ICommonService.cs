@@ -206,5 +206,38 @@ namespace KEEPER.K3._3D.Contracts
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
         void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus);
+
+        /// <summary>
+        /// 更新detablein中间表状态以及更新时间。。。。。
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="status">不同状态更新枚举</param>
+        /// <param name="ids">prtIDS</param>
+        /// <param name="uyList">更新数据包实体集合</param>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        void updateDetableStatus(Context ctx, UpdatePrtableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdatePrtableEntity> uyList = null);
+        /// <summary>
+        /// 后台调用单据转换生成目标单
+        /// </summary>
+        /// <param name="ctx">上下文</param>
+        /// <param name="option">单据转换参数</param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        DynamicObject[] ConvertOutStockBills(Context ctx, List<ConvertOption> option, string SourceFormId, string TargetFormId, string SourceEntryEntityKey);
+
+        /// <summary>
+        /// 组装更新数据包实体
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="status">不同场景的更新枚举</param>
+        /// <param name="trasferentry">调拨单更新的集合</param>
+        /// <param name="vo">错误更新的集合</param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        List<UpdatePrtableEntity> InstallUpdateDePackage(Context ctx, UpdatePrtableinEnum status, ObjectEnum Obstatus, DynamicObject[] trasferbill = null, List<ValidationErrorInfo> vo = null, List<UpdatePrtableEntity> exceptPrtList = null, IOperationResult auditResult = null, DynamicObject submitResult = null, long k3cloudheadid = 0, string billno = "", string formid = "");
+
     }
 }

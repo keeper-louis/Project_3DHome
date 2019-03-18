@@ -87,8 +87,40 @@ select Salenumber,Linenumber,Packcode,min(Scantime) Scantime from altable group 
         }
         private void checkData(Context ctx)
         {
+
+            //把已存在于错误信息表中s/l/t相同的数据直接写入到 错误信息表中 
+            string strSql = string.Format(@"/*dialect*/INSERT INTO Allocationtable select pr.id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER, pr.linenumber LINENUMBER,pr.Packcode, pr.id PRTABLEINID,
+    prt.Reason, pr.fdate FDATE, getdate() FSUBDATE from altablein pr, Allocationtable prt
+    where pr.salenumber = prt.Salenumber and pr.linenumber = prt.Linenumber and pr.status = 0 ");
+            DBUtils.Execute(ctx, strSql);
+
+
+            //把已存在于错误信息表中s/l/t相同的数据status标识为2
+            strSql = string.Format(@"/*dialect*/	update altablein set status=2 from Allocationtable prt 
+where altablein.salenumber=prt.Salenumber and altablein.linenumber=prt.Linenumber and altablein.status=0");
+            DBUtils.Execute(ctx, strSql);
+
+            //查询无上游单据数据 写入错误信息表
+            strSql = string.Format(@"/*dialect*/	INSERT INTO Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,packcode,id PRTABLEINID,
+'无对应销售订单' REASON,fdate FDATE,getdate() FSUBDATE from altablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where de.status=0 and (a.fid is null or a.FDETAILID is null)
+");
+            DBUtils.Execute(ctx, strSql);
+            //把无上游单据status标识为2
+            strSql = string.Format(@"/*dialect*/update altablein set status=2,ferrormsg='无对应销售订单' from 
+(select de.id from altablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where de.status=0 and (a.fid is null or a.FDETAILID is null) ) b where  altablein.id=b.id");
+            DBUtils.Execute(ctx, strSql);
+
+
             //五金件标识为4 准备调拨状态
-            string strSql = string.Format(@"/*dialect*/update altablein set status=4 where Warehouseout='7.01' and status=0");
+             strSql = string.Format(@"/*dialect*/update altablein set status=4 where Warehouseout='7.01' and status=0");
             DBUtils.Execute(ctx, strSql);
 
 

@@ -58,5 +58,9 @@ namespace KEEPER.K3._3D.Core.ParamOption
         /// 合格或不合格数量
         /// </summary>
         public List<int> mount { get; set; }
+        /// <summary>
+        /// 源单行号
+        /// </summary>
+        public List<int> srcbillseq { get; set; }
     }
 }
