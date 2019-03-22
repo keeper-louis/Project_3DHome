@@ -51,6 +51,7 @@ namespace KEN.K3._3D.Delivery.PUSH.ScheduleServicePlugIn
                                 List<UpdatePrtableEntity> successPrtList = _3DServiceHelper.InstallUpdateDePackage(ctx, UpdatePrtableinEnum.SubmitSucess, ObjectEnum.SO2DE, null, null, null, submitResult);
                                 _3DServiceHelper.updateDetableStatus(ctx, UpdatePrtableinEnum.SubmitSucess, ObjectEnum.SO2DE, null, successPrtList);
                             }
+                          
                         }
                         if (((List<ValidationErrorInfo>)saveResult.ValidationErrors).Count() > 0)
                         {

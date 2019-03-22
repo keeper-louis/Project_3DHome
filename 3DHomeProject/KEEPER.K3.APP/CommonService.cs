@@ -131,7 +131,7 @@ from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
 where de.status=3", tableName);
                     DBUtils.Execute(ctx, strSqlAll);
-                    string strSql = string.Format(@"/*dialect*/select distinct top 100 a.fid,de.fdate from detablein de 
+                    string strSql = string.Format(@"/*dialect*/select distinct top 10 a.fid,de.fdate from detablein de 
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
@@ -2409,31 +2409,36 @@ and alt.isPur=1
                 }
                 return updatePrtList;
             }
-            if (status == UpdatePrtableinEnum.AuditError)
-            {
-                List<UpdatePrtableEntity> uList = new List<UpdatePrtableEntity>();
-                foreach (ValidationErrorInfo item in vo)
-                {
-                    UpdatePrtableEntity uy = new UpdatePrtableEntity();
-                    uy.k3cloudheadID = Convert.ToInt64(item.BillPKID);
-                    uy.errorMsg = item.Message;
-                    uList.Add(uy);
-                }
-                return uList;
-
-            }
+            //调拨接口AuditSucess
             if (status == UpdatePrtableinEnum.AuditSucess)
             {
-                List<UpdatePrtableEntity> uList = new List<UpdatePrtableEntity>();
-                object[] ids = (from p in auditResult.SuccessDataEnity
-                                select p[0]).ToArray();
-                foreach (long item in ids)
+                UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                object[] ids = (from c in auditResult.SuccessDataEnity
+                                select c[0]).ToArray();
+                uy.k3cloudheadID = Convert.ToInt64(ids[0]);//pk
+                exceptPrtList.Add(uy);
+                return exceptPrtList;
+            }
+            //调拨接口AuditError
+            if (status == UpdatePrtableinEnum.AuditError)
+            {
+                if (submitResult != null)
                 {
                     UpdatePrtableEntity uy = new UpdatePrtableEntity();
-                    uy.k3cloudheadID = item;
-                    uList.Add(uy);
+                    uy.k3cloudheadID = Convert.ToInt64(submitResult["Id"]);//pk
+                    uy.errorMsg = Convert.ToString(submitResult["BillNo"]) + auditResult.InteractionContext.SimpleMessage;
+                    exceptPrtList.Add(uy);
+                    return exceptPrtList;
                 }
-                return uList;
+                else
+                {
+                    UpdatePrtableEntity uy = new UpdatePrtableEntity();
+                    uy.k3cloudheadID = k3cloudheadid;
+                    uy.errorMsg = billnos + auditResult.InteractionContext.SimpleMessage;
+                    exceptPrtList.Add(uy);
+                    return exceptPrtList;
+                }
+
             }
 
             if (status == UpdatePrtableinEnum.SubmitSucess)

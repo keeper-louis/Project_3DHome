@@ -32,30 +32,31 @@ namespace KEN.K3._3D.Delivery.PUSH.ScheduleServicePlugIn
                 DynamicObjectCollection auditCol = DBUtils.ExecuteDynamicObject(ctx, strSql);
                 object[] ips = (from p in auditCol
                                 select p["fcloudheadid"]).ToArray();
-                //审核
-                IOperationResult auditResult = _3DServiceHelper.Audit(ctx, "SAL_OUTSTOCK", ips);
-                //处理审核结果
-                //审核成功
-                if (auditResult.SuccessDataEnity != null && auditResult.SuccessDataEnity.Count() > 0)
-                {
-                    //正确的更新prtablein表
-                    List<UpdatePrtableEntity> uList = _3DServiceHelper.InstallUpdateDePackage(ctx,UpdatePrtableinEnum.AuditSucess,ObjectEnum.SO2DE, null, null, null, auditResult, null);
-                    _3DServiceHelper.updateDetableStatus(ctx,UpdatePrtableinEnum.AuditSucess,ObjectEnum.SO2DE, null, uList);
-                }
-                //审核失败
-                if (((List<ValidationErrorInfo>)auditResult.ValidationErrors).Count() > 0)
-                {
-                    //错误的更新prtablein表
+                List<UpdatePrtableEntity> exceptPrtList = new List<UpdatePrtableEntity>();
+                    List<UpdatePrtableEntity> successPrtList = new List<UpdatePrtableEntity>();
+                    foreach (int item in ips)
+                    {
+                    object[] id = new object[1] { item };
+                        IOperationResult auditResult = _3DServiceHelper.Audit(ctx, "SAL_OUTSTOCK", id);
+                        if (auditResult.IsSuccess)
+                        {
+                            //更新altablein表审核成功信息
+                            successPrtList = _3DServiceHelper.InstallUpdateDePackage(ctx, UpdatePrtableinEnum.AuditSucess, ObjectEnum.SO2DE, null, null, successPrtList, auditResult, null);
+                            _3DServiceHelper.updateDetableStatus(ctx, UpdatePrtableinEnum.AuditSucess, ObjectEnum.SO2DE, null, successPrtList);
 
-                    List<UpdatePrtableEntity> uList = _3DServiceHelper.InstallUpdateDePackage(ctx,UpdatePrtableinEnum.AuditError,ObjectEnum.SO2DE, null, (List<ValidationErrorInfo>)auditResult.ValidationErrors);
-                    _3DServiceHelper.updateDetableStatus(ctx,UpdatePrtableinEnum.AuditError,ObjectEnum.SO2DE, null, uList);
-                    //错误的更新processtable表
-                    _3DServiceHelper.insertErrorTable(ctx,UpdatePrtableinEnum.AuditError,ObjectEnum.SO2DE);
-                }
+                        }
+                        else if (!auditResult.InteractionContext.SimpleMessage.Equals("") && auditResult.InteractionContext.SimpleMessage != null)
+                        {
 
+                            //更新altablein表 审核错误信息
+                            exceptPrtList = _3DServiceHelper.InstallUpdateDePackage(ctx, UpdatePrtableinEnum.AuditError, ObjectEnum.SO2DE, null, null, exceptPrtList, auditResult,null, Convert.ToInt64(item));
+                            _3DServiceHelper.updateDetableStatus(ctx, UpdatePrtableinEnum.AuditError, ObjectEnum.SO2DE, null, exceptPrtList);
 
-
-            }
+                        }
+                    }
+                    //插入审核错误信息进入错误信息表
+                    _3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.AuditError, ObjectEnum.SO2DE);
+                }      
         }
     }
 }

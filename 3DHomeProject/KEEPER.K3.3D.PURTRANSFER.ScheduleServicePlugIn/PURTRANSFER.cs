@@ -84,24 +84,6 @@ namespace KEEPER.K3._3D.PURTRANSFER.ScheduleServicePlugIn
                         _3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.AuditSucess,ObjectEnum.PurTransfer, null, successPrtList);
                         //插入审核错误信息进入错误信息表
                         _3DServiceHelper._3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.AuditError,ObjectEnum.PurTransfer);
-
-                        //object[] ips = (from c in submitResult.SuccessDataEnity
-                        //                select c[0]).ToArray();
-                        //IOperationResult auditResult = _3DServiceHelper._3DServiceHelper.Audit(ctx, "STK_TransferDirect", ips);
-                        //审核成功的回写table c  update status = 接口处理完成状态
-                        //if (auditResult.SuccessDataEnity!=null)
-                        //{
-
-                        //}
-                        //审核失败回写table d insert 错误信息，回写table c 审核报错，将对应单号赋予每一个错误信息的条
-                        // if (((List<ValidationErrorInfo>)auditResult.ValidationErrors).Count() > 0)
-                        // {
-                        //List<UpdatePrtableEntity> updateSavePrtList = _3DServiceHelper._3DServiceHelper.InstallUpdatePackage(ctx, UpdatePrtableinEnum.SaveError, null, (List<ValidationErrorInfo>)saveResult.ValidationErrors);
-                        ////更新prtablein表状态
-                        //_3DServiceHelper._3DServiceHelper.updateTableStatus(ctx, UpdatePrtableinEnum.SaveError, null, updateSavePrtList);
-                        ////插入Processtable表信息
-                        //_3DServiceHelper._3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.SaveError);
-                        //}
                     }
                 }
                 if (((List<ValidationErrorInfo>)saveResult.ValidationErrors).Count()>0)

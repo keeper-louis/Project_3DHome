@@ -65,10 +65,6 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
                             {
                                 successPrtList = _3DServiceHelper.InstallUpdateAlPackage(ctx, UpdateAltableinEnum.AuditSucess, ObjectEnum.AlPurTransfer, null, null, successPrtList, auditResult, null);
                             }
-                            else if (((List<ValidationErrorInfo>)auditResult.ValidationErrors).Count() > 0)
-                            {
-
-                            }
                             else if (!auditResult.InteractionContext.SimpleMessage.Equals("") && auditResult.InteractionContext.SimpleMessage != null)
                             {
                                 exceptPrtList = _3DServiceHelper.InstallUpdateAlPackage(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlPurTransfer, null, null, exceptPrtList, auditResult, item);
