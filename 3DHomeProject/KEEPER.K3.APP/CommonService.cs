@@ -1582,11 +1582,11 @@ and alt.isPur=1
             if (status == UpdateAltableinEnum.AuditSucess)
             {
                 int i=0;
-                if (Obstatus == ObjectEnum.AlInStock|| Obstatus == ObjectEnum.AlPurTransfer)
+                if (Obstatus == ObjectEnum.AlInStock)
                 {
                     i = 4;
 
-                }else if (Obstatus == ObjectEnum.AlTransfer)
+                }else if (Obstatus == ObjectEnum.AlTransfer || Obstatus == ObjectEnum.AlPurTransfer)
                 {
                     i = 5;
                 }

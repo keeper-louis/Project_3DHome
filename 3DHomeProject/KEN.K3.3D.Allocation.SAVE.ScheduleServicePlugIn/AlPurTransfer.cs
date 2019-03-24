@@ -17,7 +17,7 @@ using KEEPER.K3._3D.Core.ParamOption;
 
 namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
 {
-    [Description("调拨接口生成采购件调拨单执行计划")]
+    [Description("调拨接口生成采购件调拨单,无需入库直接从采购件来源库调入物流库")]
     public class AlPurTransfer : IScheduleService
     {
         //private List<SalOrder2DirectTransList> purTransferData;
