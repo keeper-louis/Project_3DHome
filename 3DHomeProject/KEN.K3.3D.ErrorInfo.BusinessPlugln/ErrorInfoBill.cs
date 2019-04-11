@@ -150,12 +150,15 @@ where salenumber='{0}' and linenumber='{1}' and technicscode='{2}'"
                     this.View.ShowErrMessage(message);
                     return;
                 }
-                //把选中数据的仓库号更新 并把status=3
-                strSql = string.Format(@"/*dialect*/ update Prtablein set fstockid=a.FNUMBER ,status=3 from (
+                //删除对应错误信息表中的数据
+                strSql = string.Format(@"/*dialect*/ Delete Processtable where FBILLNO in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+                //把选中数据的仓库号更新 并把status=0
+                strSql = string.Format(@"/*dialect*/ update Prtablein set fstockid=a.FNUMBER ,status=0 from (
 select distinct tbs.FNUMBER,pr.salenumber,pr.linenumber from T_SAL_ORDER tso,  
 T_SAL_ORDERENTRY tsoe,Prtablein pr  ,Purchase2Stock ps,t_BD_Stock tbs
 where tso.fid=tsoe.FID and pr.Linenumber=tsoe.FSEQ and pr.Salenumber=tso.FBILLNO and tsoe.FMATERIALID=ps.FMATERIAL and tbs.FSTOCKID=ps.FSTOCK and pr.state=3 
-and pr.id in (841795)
+and pr.id in ({0})
  ) a where Prtablein.salenumber=a.salenumber and Prtablein.linenumber=a.linenumber ", filter);
 
                 DBUtils.Execute(this.Context, strSql);
@@ -166,7 +169,10 @@ and pr.id in (841795)
                 //并写入到错误信息表
                 strSql = string.Format(@"/*dialect*/insert into  processtable select id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER,pr.linenumber LINENUMBER,pr.technicscode TECHNICSCODE,id PRTABLEINID,
 '采购件无对应仓库' REASON,state STATE,fdate FDATE,getdate() FSUBDATE from Prtablein pr where pr.state=3 and pr.Fstockid='0' and pr.id in ({0}) ");
-
+                DBUtils.Execute(this.Context, strSql);
+                //剩余的 把status=3
+                strSql = string.Format(@"/*dialect*/update Prtablein set status=3 where Prtablein.state=3 and Prtablein.status<>2 and Prtablein.id in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
 
             }
             this.View.Refresh();
