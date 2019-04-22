@@ -84,10 +84,10 @@ namespace KEEPER.K3._3D._3DServiceHelper
             service.updateTableStatus(ctx, status,Obstatus,ids,uyList);
         }
 
-        public static void insertErrorTable(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus)
+        public static void insertErrorTable(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus, string id = null)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            service.insertErrorTable(ctx, status,Obstatus);
+            service.insertErrorTable(ctx, status,Obstatus,id);
         }
 
 
@@ -144,10 +144,10 @@ namespace KEEPER.K3._3D._3DServiceHelper
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
             return service.InstallUpdateAlPackage(ctx, status, Obstatus, trasferbill, vo, exceptPrtList, auditResult, submitResult, k3cloudheadid, billno, formid);
         }
-        public static void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus)
+        public static void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, String id)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
-            service.insertAllocationtableTable(ctx, status, Obstatus);
+            service.insertAllocationtableTable(ctx, status, Obstatus,id);
         }
         public static void updateDetableStatus(Context ctx, UpdatePrtableinEnum status, ObjectEnum Obstatus, long[] ids = null, List<UpdatePrtableEntity> uyList = null)
         {

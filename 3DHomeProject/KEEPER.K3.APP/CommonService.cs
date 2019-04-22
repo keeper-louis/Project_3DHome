@@ -467,7 +467,7 @@ order by de.fdate");
         #endregion
 
         #region 错误信息表插入
-        public void insertErrorTable(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus)
+        public void insertErrorTable(Context ctx, UpdatePrtableinEnum status, ObjectEnum Obstatus,string id=null)
         {
             if (status == UpdatePrtableinEnum.SaveError&&Obstatus == ObjectEnum.PurTransfer)
             {
@@ -597,10 +597,7 @@ order by de.fdate");
     from detablein
    where  detablein.Ferrorstatus = 2
      and detablein.status = 2
-     and not exists
-   (select 1
-            from Deliverytable
-           where Deliverytable.FBILLNO = detablein.id)");
+    and detablein.fcloudheadid={0} ",id);
                 DBUtils.Execute(ctx, strSql);
             }
 
@@ -1254,7 +1251,7 @@ order by de.fdate");
             
             if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlInStock)
             {
-                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=3 and isPur is null and ferrorstatus=0 order by fdate");
+                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=3 and isPur =0 and ferrorstatus=0 order by fdate");
                 DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
                 if (dateData.Count() > 0)
                 {
@@ -1386,7 +1383,7 @@ and alt.isPur=0
         orderentry.Fbomid,
        alt.amount,
         alt.PurStockId Warehouseout,
-	   alt.Warehouseout Warehousein
+	   '0' Warehousein
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -1756,7 +1753,7 @@ and alt.isPur=1
                 //创建临时表，将ids存入临时表，通过匹配更新数据处理状态，更新完成后删除临时表
                 dt = new DataTable();
                 dt.TableName = "altablein";
-                idCol = dt.Columns.Add("fcloudid");
+                idCol = dt.Columns.Add("fcloudheadid");
                 idCol.DataType = typeof(long);
                 statusCol = dt.Columns.Add("status");
                 statusCol.DataType = typeof(int);
@@ -1774,7 +1771,7 @@ and alt.isPur=1
                 dt.EndLoadData();
                 batchUpdateParam = new BatchSqlParam("altablein", dt);
 
-                batchUpdateParam.AddWhereExpression("fcloudid", KDDbType.Int64, "fcloudid");
+                batchUpdateParam.AddWhereExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
 
                 batchUpdateParam.AddSetExpression("status", KDDbType.Int32, "status");
  
@@ -1864,7 +1861,7 @@ and alt.isPur=1
         }
         #endregion
         #region 调拨错误信息表插入
-        public void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus)
+        public void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus,String id)
         {
             //简单生产入库保存错误写入
             if (status == UpdateAltableinEnum.SaveError && Obstatus == ObjectEnum.AlInStock)
@@ -1883,10 +1880,7 @@ and alt.isPur=1
     from altablein
    where  altablein.Ferrorstatus = 1
      and altablein.status = 2
-     and not exists
-   (select 1
-            from Allocationtable
-           where Allocationtable.FBILLNO = altablein.id)");
+     and altablein.fcloudheadid={0}", id);
                 DBUtils.Execute(ctx, strSql);
             }
             //简单生产入库审核错误写入
@@ -1906,10 +1900,7 @@ and alt.isPur=1
     from altablein
    where  altablein.Ferrorstatus = 2
      and altablein.status = 2
-     and not exists
-   (select 1
-            from Allocationtable
-           where Allocationtable.FBILLNO = altablein.id)");
+     and altablein.fcloudheadid={0}",id);
                 DBUtils.Execute(ctx, strSql);
             }
 
@@ -1930,10 +1921,7 @@ and alt.isPur=1
     from altablein
    where  altablein.Ferrorstatus = 3
      and altablein.status = 2
-     and not exists
-   (select 1
-            from Allocationtable
-           where Allocationtable.FBILLNO = altablein.id)");
+     and altablein.fcloudheadid={0}", id);
                 DBUtils.Execute(ctx, strSql);
             }
             //直接调拨单审核错误写入
@@ -1953,10 +1941,7 @@ and alt.isPur=1
     from altablein
    where  altablein.Ferrorstatus = 4
      and altablein.status = 2
-     and not exists
-   (select 1
-            from Allocationtable
-           where Allocationtable.FBILLNO = altablein.id)");
+     and altablein.fcloudheadid={0}", id);
                 DBUtils.Execute(ctx, strSql);
             }
 
@@ -1977,10 +1962,7 @@ and alt.isPur=1
     from altablein
    where  altablein.Ferrorstatus = 5
      and altablein.status = 2
-     and not exists
-   (select 1
-            from Allocationtable
-           where Allocationtable.FBILLNO = altablein.id)");
+     and altablein.fcloudheadid={0}", id);
                 DBUtils.Execute(ctx, strSql);
             }
             //采购件直接调拨单审核错误写入
@@ -2000,10 +1982,7 @@ and alt.isPur=1
     from altablein
    where  altablein.Ferrorstatus = 6
      and altablein.status = 2
-     and not exists
-   (select 1
-            from Allocationtable
-           where Allocationtable.FBILLNO = altablein.id)");
+     and altablein.fcloudheadid={0}", id);
                 DBUtils.Execute(ctx, strSql);
             }
 
@@ -2357,7 +2336,7 @@ and alt.isPur=1
                     DynamicObjectCollection rpt = cc["SAL_OUTSTOCKENTRY"] as DynamicObjectCollection;
                     foreach (DynamicObject item in rpt)
                     {
-                        item["FDETABLEINID"] = option.dic[Convert.ToString(item["SoorDerno"]) + Convert.ToString(item["srcbillseq"])];
+                        item["FDETABLEINID"] = option.dic[Convert.ToString(item["SoorDerno"]) + Convert.ToString(item["Fsrcbillseq"])];
 
                     }
                     before.Add(cc);

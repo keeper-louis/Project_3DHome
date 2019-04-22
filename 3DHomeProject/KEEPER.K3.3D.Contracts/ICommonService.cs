@@ -123,7 +123,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <param name="status">不同状态更新枚举</param>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        void insertErrorTable(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus);
+        void insertErrorTable(Context ctx, UpdatePrtableinEnum status,ObjectEnum Obstatus, string id = null);
 
         /// <summary>
         /// 提交单据
@@ -205,7 +205,7 @@ namespace KEEPER.K3._3D.Contracts
         /// <param name="status">不同状态更新枚举</param>
         [OperationContract]
         [FaultContract(typeof(ServiceFault))]
-        void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus);
+        void insertAllocationtableTable(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, String id);
 
         /// <summary>
         /// 更新detablein中间表状态以及更新时间。。。。。

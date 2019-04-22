@@ -24,8 +24,8 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
         private SalOrder2DirectTransList transferData;
         public void Run(Context ctx, Schedule schedule)
         {
-            ctx.UserId = 214076;
-            ctx.UserName = "扫码专用账户";
+            ctx.UserId = 174881;
+            ctx.UserName = "demo1";
             if (_3DServiceHelper.isTransfer(ctx, ObjectEnum.AlPurTransfer, UpdateAltableinEnum.BeforeSave))
             {
                 transferData = _3DServiceHelper.getALSaveData(ctx, UpdateAltableinEnum.BeforeSave, ObjectEnum.AlPurTransfer);//本次执行计划处理的数据
@@ -40,6 +40,7 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
 
                 DynamicObject[] model = modelList.Select(p => p).ToArray() as DynamicObject[];
                 IOperationResult saveResult = _3DServiceHelper.BatchSave(ctx, "STK_TransferDirect", model);
+                String id = Convert.ToString(model[0]["id"]);
                 //对结果进行处理
                 //数据包整理完成后，将实际的分录主键反写回altablein表，便于未来反写其他状态所用
                 List<UpdateAltableinEntity> updateAltList = _3DServiceHelper.InstallUpdateAlPackage(ctx, UpdateAltableinEnum.AfterCreateModel, ObjectEnum.AlPurTransfer, model, null, null, null, null, 0, "", "TransferDirectEntry");
@@ -64,18 +65,22 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
                             if (auditResult.IsSuccess)
                             {
                                 successPrtList = _3DServiceHelper.InstallUpdateAlPackage(ctx, UpdateAltableinEnum.AuditSucess, ObjectEnum.AlPurTransfer, null, null, successPrtList, auditResult, null);
+                                //更新altablein表审核成功信息
+                                _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.AuditSucess, ObjectEnum.AlPurTransfer, null, successPrtList);
                             }
                             else if (!auditResult.InteractionContext.SimpleMessage.Equals("") && auditResult.InteractionContext.SimpleMessage != null)
                             {
                                 exceptPrtList = _3DServiceHelper.InstallUpdateAlPackage(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlPurTransfer, null, null, exceptPrtList, auditResult, item);
+                                //更新altablein表 审核错误信息
+                                _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlPurTransfer, null, exceptPrtList);
+
+                                //插入审核错误信息进入错误信息表
+                                _3DServiceHelper.insertAllocationtableTable(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlPurTransfer,id);
                             }
+
+
                         }
-                        //更新altablein表 审核错误信息
-                        _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlPurTransfer, null, exceptPrtList);
-                        //更新altablein表审核成功信息
-                        _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.AuditSucess, ObjectEnum.AlPurTransfer, null, successPrtList);
-                        //插入审核错误信息进入错误信息表
-                        _3DServiceHelper.insertAllocationtableTable(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlPurTransfer);
+
                     }
                 }
                 if (((List<ValidationErrorInfo>)saveResult.ValidationErrors).Count() > 0)
@@ -85,7 +90,7 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
                     _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.SaveError, ObjectEnum.AlPurTransfer, bb, updateVoSavePrtList);
 
                     //插入保存错误信息进入错误信息表
-                    _3DServiceHelper.insertAllocationtableTable(ctx, UpdateAltableinEnum.SaveError, ObjectEnum.AlPurTransfer);
+                    _3DServiceHelper.insertAllocationtableTable(ctx, UpdateAltableinEnum.SaveError, ObjectEnum.AlPurTransfer,id);
 
                 }
 
@@ -98,9 +103,9 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
         {
             //((IDynamicFormView)dynamicFormView).InvokeFieldUpdateService("FSTAFFNUMBER", 0);//SetItemValueByNumber不会触发值更新事件，需要继续调用该函数
             //调出库存组织，默认组织编码[102.01]
-            dynamicFormView.SetItemValueByNumber("FStockOutOrgId", "102.01", 0);
+            dynamicFormView.SetItemValueByNumber("FStockOutOrgId", "101.01", 0);
             //调入库存组织，默认组织编码[102.01]
-            dynamicFormView.SetItemValueByNumber("FStockOrgId", "102.01", 0);
+            dynamicFormView.SetItemValueByNumber("FStockOrgId", "101.01", 0);
             //日期，Convert.ToDateTime("2018-9-27");
             dynamicFormView.UpdateValue("FDate", 0, transferData.BusinessDate);
             //备注
@@ -113,7 +118,10 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
             //新增分录
             //((IBillView)dynamicFormView).Model.CreateNewEntryRow("FBillEntry");
             //如果预知有多条分录，可以使用这个方法进行批量新增
-            ((IBillView)dynamicFormView).Model.BatchCreateNewEntryRow("FBillEntry", num - 1);
+            if (num!=1)
+            {
+                ((IBillView)dynamicFormView).Model.BatchCreateNewEntryRow("FBillEntry", num-1);
+            }
             //((IBillView)dynamicFormView).Model.BatchCreateNewEntryRow("FBillEntry", num);
             for (int i = 0; i < a.Count; i++)
             {

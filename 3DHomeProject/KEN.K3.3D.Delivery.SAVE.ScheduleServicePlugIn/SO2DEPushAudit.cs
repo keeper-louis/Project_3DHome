@@ -22,8 +22,8 @@ namespace KEN.K3._3D.Delivery.PUSH.ScheduleServicePlugIn
     {
         public void Run(Context ctx, Schedule schedule)
         {
-            ctx.UserId = 214076;
-            ctx.UserName = "扫码专用账户";
+            ctx.UserId = 143108;
+            ctx.UserName = "demo";
             //判断需要审核的单据
             if (_3DServiceHelper.isTransfer(ctx, ObjectEnum.SO2DE, UpdatePrtableinEnum.Audit))
             {
@@ -51,11 +51,11 @@ namespace KEN.K3._3D.Delivery.PUSH.ScheduleServicePlugIn
                             //更新altablein表 审核错误信息
                             exceptPrtList = _3DServiceHelper.InstallUpdateDePackage(ctx, UpdatePrtableinEnum.AuditError, ObjectEnum.SO2DE, null, null, exceptPrtList, auditResult,null, Convert.ToInt64(item));
                             _3DServiceHelper.updateDetableStatus(ctx, UpdatePrtableinEnum.AuditError, ObjectEnum.SO2DE, null, exceptPrtList);
-
-                        }
+                        //插入审核错误信息进入错误信息表
+                        _3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.AuditError, ObjectEnum.SO2DE, Convert.ToString(id[0]));
                     }
-                    //插入审核错误信息进入错误信息表
-                    _3DServiceHelper.insertErrorTable(ctx, UpdatePrtableinEnum.AuditError, ObjectEnum.SO2DE);
+                    }
+
                 }      
         }
     }

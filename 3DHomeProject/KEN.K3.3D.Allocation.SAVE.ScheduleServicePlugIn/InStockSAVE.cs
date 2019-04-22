@@ -24,8 +24,8 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
         private SalOrder2DirectTransList transferData;
         public void Run(Context ctx, Schedule schedule)
         {
-            ctx.UserId = 214076;
-            ctx.UserName = "扫码专用账户";
+            ctx.UserId = 174881;
+            ctx.UserName = "demo1";
             if (_3DServiceHelper.isTransfer(ctx, ObjectEnum.AlInStock, UpdateAltableinEnum.BeforeSave))
             {
                 transferData = _3DServiceHelper.getALSaveData(ctx, UpdateAltableinEnum.BeforeSave,ObjectEnum.AlInStock);//本次执行计划处理的数据
@@ -40,6 +40,7 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
 
                 DynamicObject[] model = modelList.Select(p => p).ToArray() as DynamicObject[];
                 IOperationResult saveResult = _3DServiceHelper.BatchSave(ctx, "SP_InStock", model);
+                String id = Convert.ToString(model[0]["id"]);
                 //对结果进行处理
                 //数据包整理完成后，将实际的分录主键反写回altablein表，便于未来反写其他状态所用
                 List<UpdateAltableinEntity> updateAltList = _3DServiceHelper.InstallUpdateAlPackage(ctx, UpdateAltableinEnum.AfterCreateModel, ObjectEnum.AlInStock, model, null, null, null, null, 0, "", "Entity");
@@ -64,18 +65,20 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
                             if (auditResult.IsSuccess)
                             {
                                 successPrtList = _3DServiceHelper.InstallUpdateAlPackage(ctx, UpdateAltableinEnum.AuditSucess, ObjectEnum.AlInStock, null, null, successPrtList, auditResult, null);
+                                //更新altablein表审核成功信息
+                                _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.AuditSucess, ObjectEnum.AlInStock, null, successPrtList);
                             }
                             else if (!auditResult.InteractionContext.SimpleMessage.Equals("") && auditResult.InteractionContext.SimpleMessage != null)
                             {
                                 exceptPrtList = _3DServiceHelper.InstallUpdateAlPackage(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlInStock, null, null, exceptPrtList, auditResult, item);
+                                //更新altablein表 审核错误信息
+                                _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlInStock, null, exceptPrtList);
+
+                                //插入审核错误信息进入错误信息表
+                                _3DServiceHelper.insertAllocationtableTable(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlInStock,id);
                             }
                         }
-                        //更新altablein表 审核错误信息
-                        _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlInStock, null, exceptPrtList);
-                        //更新altablein表审核成功信息
-                        _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.AuditSucess, ObjectEnum.AlInStock, null, successPrtList);
-                        //插入审核错误信息进入错误信息表
-                        _3DServiceHelper.insertAllocationtableTable(ctx, UpdateAltableinEnum.AuditError, ObjectEnum.AlInStock);                      
+            
                     }
                 }
                 if (((List<ValidationErrorInfo>)saveResult.ValidationErrors).Count() > 0)
@@ -85,7 +88,7 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
                     _3DServiceHelper.updateAltableStatus(ctx, UpdateAltableinEnum.SaveError, ObjectEnum.AlInStock, bb, updateVoSavePrtList);
 
                     //插入保存错误信息进入错误信息表
-                    _3DServiceHelper.insertAllocationtableTable(ctx, UpdateAltableinEnum.SaveError, ObjectEnum.AlInStock);
+                    _3DServiceHelper.insertAllocationtableTable(ctx, UpdateAltableinEnum.SaveError, ObjectEnum.AlInStock,id);
 
                 }
 
@@ -98,7 +101,7 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
             //调出库存组织，默认组织编码[102.01]
             //dynamicFormView.SetItemValueByNumber("FStockOutOrgId", "102.01", 0);
             //调入库存组织，默认组织编码[102.01]
-            dynamicFormView.SetItemValueByNumber("FStockOrgId", "102.01", 0);
+            dynamicFormView.SetItemValueByNumber("FStockOrgId", "101.01", 0);
             //日期，Convert.ToDateTime("2018-9-27");
             dynamicFormView.UpdateValue("FDate", 0, transferData.BusinessDate);
             //备注

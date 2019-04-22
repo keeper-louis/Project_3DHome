@@ -34,24 +34,13 @@ namespace KEN.K3._3D.DeliveryPumpingData
             DBUtils.Execute(ctx, strSql);
 
             //删除问题数据
-            strSql = string.Format(@"/*dialect*/delete Deliveryview where linenumber='加急，单独入库' 
-or linenumber like '190%' or linenumber like '201%' 
-or linenumber='c' ");
+            strSql = string.Format(@"/*dialect*/delete Deliveryview where linenumber in (select Linenumber from Deliveryview de where PATINDEX('%[^0-9]%', de.Linenumber)<>0) ");
             DBUtils.Execute(ctx, strSql);
-            strSql = string.Format(@"/*dialect*/delete Deliveryview where Salenumber = '8851168' and Linenumber = '1' and Amount<> 1");
-            DBUtils.Execute(ctx, strSql);
-
             //匹配不存在于接口数据表的视图物理表的数据 插入到 接口数据表中
             strSql = string.Format(@"/*dialect*/insert into detable select salenumber,linenumber,amount,'0' status,
 scantime,CONVERT(varchar(10),scantime, 120) fdate ,getdate() Fsubdate
 from Deliveryview v where not exists(select * from detable pr where pr.salenumber=v.Salenumber and pr.linenumber=v.Linenumber and v.scantime=pr.scantime)");
             DBUtils.Execute(ctx, strSql);
-
-
-            //标识过期数据 status=4
-            strSql = @"/*dialect*/update detable set status = 4 where Scantime< '2018-12-1' and status=0 ";
-            DBUtils.Execute(ctx, strSql);
-
 
             //把接口数据表中status为0的数据（未插入到待录入表的数据状态） sum数量 插入到 待录入表临时表Prtabletemp
             strSql = string.Format(@"/*dialect*/insert into detabletemp  select  '',Salenumber,Linenumber, sum(Amount) amount,'0' status,scantime,'' FsubDate,0,0,'','',''
@@ -65,17 +54,18 @@ and pr.linenumber=prt.linenumber and pr.fdate=prt.fdate
 and pr.status in (2,3) and pr.Ferrorstatus<>2");
             DBUtils.Execute(ctx, strSql);
             //删除detablein中与detabletemp中id相同的数据
-            strSql = string.Format(@"/*dialect*/delete detablein  from Prtabletemp prt where detablein.id=prt.id");
+            strSql = string.Format(@"/*dialect*/delete detablein  from detabletemp prt where detablein.id=prt.id");
             DBUtils.Execute(ctx, strSql);
             //删除Deliverytablee中与detabletemp中id相同的数据
-            strSql = string.Format(@"/*dialect*/delete Deliverytable  from Prtabletemp prt where Deliverytable.FBILLNO=prt.id");
+            strSql = string.Format(@"/*dialect*/delete Deliverytable  from detabletemp prt where Deliverytable.FBILLNO=prt.id");
             DBUtils.Execute(ctx, strSql);
             //prtabletemp表中sum(amount) 插入到 prtablein
             strSql = string.Format(@"/*dialect*/insert into detablein  select  Salenumber,Linenumber,sum(Amount) amount,'0' status,fdate,'' FsubDate,0,0,'','',''
  from detabletemp group by Salenumber,Linenumber,fdate");
+            DBUtils.Execute(ctx, strSql);
             //清空detabletemp表
             strSql = string.Format(@"/*dialect*/truncate table detabletemp ");
-
+            DBUtils.Execute(ctx, strSql);
             //把接口数据表中status全置为1 （已插入到待录入表的数据状态）
             strSql = string.Format(@"/*dialect*/update detable set status = 1 where status=0");
             DBUtils.Execute(ctx, strSql);
@@ -113,6 +103,48 @@ from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
 where de.status=0 and (a.fid is null or a.FDETAILID is null) ) b where  detablein.id=b.id");
             DBUtils.Execute(ctx, strSql);
+
+            //查询物料启用BOM管理，但是销售订单中未选中BOM版本
+            strSql = string.Format(@"/*dialect*/ INSERT INTO Deliverytable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,id PRTABLEINID,
+'物料启用BOM管理，但是销售订单中未选中BOM版本' REASON,fdate FDATE,getdate() FSUBDATE from detablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tsoe.FBOMID,tbm.FISENABLE
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialInvPty tbm
+ where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FINVPTYID='10003') a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where a.FISENABLE=1 and a.FBOMID=0 and de.status=0
+");
+            DBUtils.Execute(ctx, strSql);
+            //把查询物料启用BOM管理，但是销售订单中未选中BOM版本的单据status标识为2
+            strSql = string.Format(@"/*dialect*/update detablein set status=2,ferrormsg='物料启用BOM管理，但是销售订单中未选中BOM版本' from 
+(select de.id from detablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tsoe.FBOMID,tbm.FISENABLE
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialInvPty tbm
+ where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FINVPTYID='10003') a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where a.FISENABLE=1 and a.FBOMID=0 and de.status=0 ) b where  detablein.id=b.id");
+            DBUtils.Execute(ctx, strSql);
+
+            //查询物料未维护生产车间
+            strSql = string.Format(@"/*dialect*/ INSERT INTO Deliverytable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,id PRTABLEINID,
+'物料未维护生产车间' REASON,fdate FDATE,getdate() FSUBDATE from detablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tbm.FWorkShopId
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialProduce tbm,t_BD_MaterialBase tbmb
+ where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FMATERIALID=tbmb.FMATERIALID and FERPCLSID <> '1') a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where a.FWORKSHOPID=0  and de.status=0 
+");
+            DBUtils.Execute(ctx, strSql);
+            //把查询物料未维护生产车间的单据status标识为2
+            strSql = string.Format(@"/*dialect*/update detablein set status=2,ferrormsg='物料未维护生产车间' from 
+(select de.id from detablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tbm.FWorkShopId
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialProduce tbm,t_BD_MaterialBase tbmb
+ where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FMATERIALID=tbmb.FMATERIALID and FERPCLSID <> '1') a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where a.FWORKSHOPID=0  and de.status=0  ) b where  detablein.id=b.id");
+            DBUtils.Execute(ctx, strSql);
+
+
             //查询出库数量大于销售订单中可出库数量的数据  写入错误信息表
             strSql = string.Format(@"/*dialect*/insert into Deliverytable
 select id FBILLNO,'A' FDOCUMENTSTATUS, detablein.salenumber SALENUMBER,detablein.linenumber LINENUMBER,id PRTABLEINID,

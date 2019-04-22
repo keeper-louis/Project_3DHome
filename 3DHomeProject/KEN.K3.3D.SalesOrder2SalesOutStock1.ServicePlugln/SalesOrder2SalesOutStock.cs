@@ -33,7 +33,7 @@ namespace KEN.K3._3D.SalesOrder2SalesOutStock.ServicePlugln
                     (e.TargetExtendedDataEntities.FindByEntityKey("FEntity"))[i].DataEntity["SALBASEQTY"] = amount[i];
                     (e.TargetExtendedDataEntities.FindByEntityKey("FEntity"))[i].DataEntity["BaseUnitQty"] = amount[i];
                     (e.TargetExtendedDataEntities.FindByEntityKey("FEntity"))[i].DataEntity["PRICEBASEQTY"] = amount[i];
-                    (e.TargetExtendedDataEntities.FindByEntityKey("FEntity"))[i].DataEntity["srcbillseq"] = srcbillseq[i];
+                    (e.TargetExtendedDataEntities.FindByEntityKey("FEntity"))[i].DataEntity["Fsrcbillseq"] = srcbillseq[i];
 
                 }
             }

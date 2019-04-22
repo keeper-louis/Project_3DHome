@@ -31,11 +31,7 @@ namespace KEN.K3._3D.AltablePumpingData
             DBUtils.Execute(ctx, strSql);
 
             //删除问题数据
-            strSql = string.Format(@"/*dialect*/delete Allocationview where linenumber='加急，单独入库' 
-or linenumber like '190%' or linenumber like '201%' 
-or linenumber='c' ");
-            DBUtils.Execute(ctx, strSql);
-            strSql = string.Format(@"/*dialect*/delete Allocationview where Salenumber = '8851168' and Linenumber = '1' and Amount<> 1 ");
+            strSql = string.Format(@"/*dialect*/delete Allocationview where linenumber in (select Linenumber from Allocationview de where PATINDEX('%[^0-9]%', de.Linenumber)<>0) ");
             DBUtils.Execute(ctx, strSql);
 
             //删除重复扫码数据
@@ -68,9 +64,9 @@ v.packcode=pr.packcode and v.scantime=pr.scantime) group by salenumber,linenumbe
             DBUtils.Execute(ctx, strSql);
 
 
-            //标识过期数据 status=4
-            strSql = @"/*dialect*/ update altable set status = 4 where Scantime< '2018-12-1' and status=0 ";
-            DBUtils.Execute(ctx, strSql);
+            ////标识过期数据 status=4
+            //strSql = @"/*dialect*/ update altable set status = 4 where Scantime< '2018-12-1' and status=0 ";
+            //DBUtils.Execute(ctx, strSql);
             //去除packcode第二次数据 status=2
             strSql = @"/*dialect*/update altable set status=2 from (
 select Salenumber,Linenumber,Packcode,max(Scantime) Scantime from altable group by Salenumber,Linenumber,Packcode) a
@@ -85,31 +81,7 @@ select Salenumber,Linenumber,Packcode,max(Scantime) Scantime from altable group 
             strSql = @"/*dialect*/update altable set status=1 where  status=0 ";
             DBUtils.Execute(ctx, strSql);
 
-            //五金件标识为4 准备调拨状态
-            strSql = string.Format(@"/*dialect*/update altablein set status=4 where Warehouseout='7.01' and status=0");
-            DBUtils.Execute(ctx, strSql);
-
-
-            //标识采购件
-            strSql = string.Format(@"/*dialect*/   update altablein set isPur=1
- from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_Material t_BD_Material
- where tso.fid = tsoe.FID and altablein.Linenumber = tsoe.FSEQ and altablein.Salenumber = tso.FBILLNO
- and t_BD_Material.FMATERIALID = tsoe.FMATERIALID
-and tsoe.FMATERIALID in (select tbm.FMATERIALID
-from t_BD_MaterialBase tbmb, t_BD_Material tbm
- where FCATEGORYID = '237' and tbm.FMATERIALID = tbmb.FMATERIALID) and altablein.isPur=0 and altablein.status=0");
-            DBUtils.Execute(ctx, strSql);
-
-            //标识采购件仓库
-            strSql = string.Format(@"/*dialect*/ update altablein set PurStockId=a.FNUMBER from (
-select distinct tbs.FNUMBER,pr.salenumber,pr.linenumber from T_SAL_ORDER tso,  
-T_SAL_ORDERENTRY tsoe,altablein pr  ,Purchase2Stock ps,t_BD_Stock tbs
-where tso.fid=tsoe.FID and pr.Linenumber=tsoe.FSEQ and pr.Salenumber=tso.FBILLNO and tsoe.FMATERIALID=ps.FMATERIAL and tbs.FSTOCKID=ps.FSTOCK and pr.isPur=1
-and pr.status=0
- ) a where altablein.salenumber=a.salenumber and altablein.linenumber=a.linenumber");
-            DBUtils.Execute(ctx, strSql);
-            strSql = string.Format(@"/*dialect*/update altablein set PurStockId = '' where PurStockId is null");
-            DBUtils.Execute(ctx, strSql);
+  
 
 
         }
@@ -146,6 +118,75 @@ on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
 where de.status=0 and (a.fid is null or a.FDETAILID is null) ) b where  altablein.id=b.id");
             DBUtils.Execute(ctx, strSql);
 
+            //查询物料启用BOM管理，但是销售订单中未选中BOM版本
+            strSql = string.Format(@"/*dialect*/ INSERT INTO Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,packcode,id PRTABLEINID,
+'物料启用BOM管理，但是销售订单中未选中BOM版本' REASON,fdate FDATE,getdate() FSUBDATE from altablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tsoe.FBOMID,tbm.FISENABLE
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialInvPty tbm
+ where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FINVPTYID='10003') a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where a.FISENABLE=1 and a.FBOMID=0 and de.status=0
+");
+            DBUtils.Execute(ctx, strSql);
+            //把查询物料启用BOM管理，但是销售订单中未选中BOM版本的单据status标识为2
+            strSql = string.Format(@"/*dialect*/update altablein set status=2,ferrormsg='物料启用BOM管理，但是销售订单中未选中BOM版本' from 
+(select de.id from altablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tsoe.FBOMID,tbm.FISENABLE
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialInvPty tbm
+ where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FINVPTYID='10003') a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where a.FISENABLE=1 and a.FBOMID=0 and de.status=0 ) b where  altablein.id=b.id");
+            DBUtils.Execute(ctx, strSql);
+
+
+            //查询物料未维护生产车间
+            strSql = string.Format(@"/*dialect*/ INSERT INTO Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,packcode,id PRTABLEINID,
+'物料未维护生产车间' REASON,fdate FDATE,getdate() FSUBDATE from altablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tbm.FWorkShopId
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialProduce tbm,t_BD_MaterialBase tbmb
+ where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FMATERIALID=tbmb.FMATERIALID and FERPCLSID <> '1') a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where a.FWORKSHOPID=0  and de.status=0 
+");
+            DBUtils.Execute(ctx, strSql);
+            //把查询物料未维护生产车间的单据status标识为2
+            strSql = string.Format(@"/*dialect*/update altablein set status=2,ferrormsg='物料未维护生产车间' from 
+(select de.id from altablein de 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tbm.FWorkShopId
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialProduce tbm,t_BD_MaterialBase tbmb
+ where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FMATERIALID=tbmb.FMATERIALID and FERPCLSID <> '1') a
+on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
+where a.FWORKSHOPID=0  and de.status=0  ) b where  altablein.id=b.id");
+            DBUtils.Execute(ctx, strSql);
+
+
+            //五金件标识为4 准备调拨状态
+            strSql = string.Format(@"/*dialect*/update altablein set status=4 where Warehouseout='7.01' and status=0");
+            DBUtils.Execute(ctx, strSql);
+
+
+            //标识采购件
+            strSql = string.Format(@"/*dialect*/   update altablein set isPur=1
+ from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_Material t_BD_Material
+ where tso.fid = tsoe.FID and altablein.Linenumber = tsoe.FSEQ and altablein.Salenumber = tso.FBILLNO
+ and t_BD_Material.FMATERIALID = tsoe.FMATERIALID
+and tsoe.FMATERIALID in (select tbm.FMATERIALID
+from t_BD_MaterialBase tbmb, t_BD_Material tbm
+ where FERPCLSID='1' and tbm.FMATERIALID = tbmb.FMATERIALID) and altablein.isPur=0 and altablein.status=0");
+            DBUtils.Execute(ctx, strSql);
+
+            //标识采购件仓库
+            strSql = string.Format(@"/*dialect*/ update altablein set PurStockId=a.FNUMBER from (
+select distinct tbs.FNUMBER,pr.salenumber,pr.linenumber from T_SAL_ORDER tso,  
+T_SAL_ORDERENTRY tsoe,altablein pr  ,Purchase2Stock ps,t_BD_Stock tbs
+where tso.fid=tsoe.FID and pr.Linenumber=tsoe.FSEQ and pr.Salenumber=tso.FBILLNO and tsoe.FMATERIALID=ps.FMATERIAL and tbs.FSTOCKID=ps.FSTOCK and pr.isPur=1
+and pr.status=0
+ ) a where altablein.salenumber=a.salenumber and altablein.linenumber=a.linenumber");
+            DBUtils.Execute(ctx, strSql);
+            strSql = string.Format(@"/*dialect*/update altablein set PurStockId = '' where PurStockId is null");
+            DBUtils.Execute(ctx, strSql);
+            strSql = string.Format(@"/*dialect*/update altablein set isPur = '' where isPur is null");
+            DBUtils.Execute(ctx, strSql);
 
             //查询没有对应仓库的采购件 写入错误信息表
             strSql = string.Format(@"/*dialect*/ insert into  Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER,pr.linenumber LINENUMBER,pr.Packcode Packcode,id PRTABLEINID,

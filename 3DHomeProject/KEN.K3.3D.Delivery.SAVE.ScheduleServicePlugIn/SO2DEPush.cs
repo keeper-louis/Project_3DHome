@@ -21,8 +21,8 @@ namespace KEN.K3._3D.Delivery.PUSH.ScheduleServicePlugIn
     {
         public void Run(Context ctx, Schedule schedule)
         {
-            ctx.UserId = 214076;
-            ctx.UserName = "扫码专用账户";
+            ctx.UserId = 143108;
+            ctx.UserName = "demo";
             if (_3DServiceHelper.isTransfer(ctx, ObjectEnum.SO2DE, UpdatePrtableinEnum.BeforeSave))
             {
                 List<ConvertOption> options = _3DServiceHelper.getOLAPushData(ctx, ObjectEnum.SO2DE);
@@ -40,7 +40,7 @@ namespace KEN.K3._3D.Delivery.PUSH.ScheduleServicePlugIn
                         {
                             _3DServiceHelper.updateDetableStatus(ctx, UpdatePrtableinEnum.AfterCreateModel, ObjectEnum.SO2DE, null, updatePrtList);
                         }
-                        //处理保存结果，成功、失败
+                        //处理保存结果，成功、失败i
                         if (saveResult.SuccessDataEnity != null && saveResult.SuccessDataEnity.Count() > 0)
                         {
                             object[] ids = (from c in saveResult.SuccessDataEnity
