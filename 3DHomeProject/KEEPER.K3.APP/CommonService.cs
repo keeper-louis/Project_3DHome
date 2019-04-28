@@ -573,7 +573,8 @@ order by de.fdate");
          detablein.id PRTABLEINID,
          detablein.ferrormsg REASON,
          detablein.fdate FDATE,
-         getdate() FSUBDATE
+         getdate() FSUBDATE,
+		 detablein.fbillno
     from detablein
    where  detablein.Ferrorstatus = 1
      and detablein.status = 2
@@ -593,11 +594,12 @@ order by de.fdate");
          detablein.id PRTABLEINID,
          detablein.ferrormsg REASON,
          detablein.fdate FDATE,
-         getdate() FSUBDATE
+         getdate() FSUBDATE,
+		 detablein.fbillno
     from detablein
    where  detablein.Ferrorstatus = 2
      and detablein.status = 2
-    and detablein.fcloudheadid={0} ",id);
+    and detablein.fcloudheadid={0} ", id);
                 DBUtils.Execute(ctx, strSql);
             }
 
@@ -1876,7 +1878,8 @@ and alt.isPur=1
 		 case when altablein.ferrormsg is null then ''
 		 else altablein.ferrormsg end REASON,
          altablein.fdate FDATE,
-         getdate() FSUBDATE
+         getdate() FSUBDATE,
+		 altablein.fbillno
     from altablein
    where  altablein.Ferrorstatus = 1
      and altablein.status = 2
@@ -1896,11 +1899,12 @@ and alt.isPur=1
 		 case when altablein.ferrormsg is null then ''
 		 else altablein.ferrormsg end REASON,
          altablein.fdate FDATE,
-         getdate() FSUBDATE
+         getdate() FSUBDATE,
+		 altablein.fbillno
     from altablein
    where  altablein.Ferrorstatus = 2
      and altablein.status = 2
-     and altablein.fcloudheadid={0}",id);
+     and altablein.fcloudheadid={0}", id);
                 DBUtils.Execute(ctx, strSql);
             }
 
@@ -1917,7 +1921,8 @@ and alt.isPur=1
 		 case when altablein.ferrormsg is null then ''
 		 else altablein.ferrormsg end REASON,
          altablein.fdate FDATE,
-         getdate() FSUBDATE
+         getdate() FSUBDATE,
+		 altablein.fbillno
     from altablein
    where  altablein.Ferrorstatus = 3
      and altablein.status = 2
@@ -1937,7 +1942,8 @@ and alt.isPur=1
 		 case when altablein.ferrormsg is null then ''
 		 else altablein.ferrormsg end REASON,
          altablein.fdate FDATE,
-         getdate() FSUBDATE
+         getdate() FSUBDATE,
+		 altablein.fbillno
     from altablein
    where  altablein.Ferrorstatus = 4
      and altablein.status = 2
@@ -1958,7 +1964,8 @@ and alt.isPur=1
 		 case when altablein.ferrormsg is null then ''
 		 else altablein.ferrormsg end REASON,
          altablein.fdate FDATE,
-         getdate() FSUBDATE
+         getdate() FSUBDATE,
+		 altablein.fbillno
     from altablein
    where  altablein.Ferrorstatus = 5
      and altablein.status = 2
@@ -1978,7 +1985,8 @@ and alt.isPur=1
 		 case when altablein.ferrormsg is null then ''
 		 else altablein.ferrormsg end REASON,
          altablein.fdate FDATE,
-         getdate() FSUBDATE
+         getdate() FSUBDATE,
+		 altablein.fbillno
     from altablein
    where  altablein.Ferrorstatus = 6
      and altablein.status = 2

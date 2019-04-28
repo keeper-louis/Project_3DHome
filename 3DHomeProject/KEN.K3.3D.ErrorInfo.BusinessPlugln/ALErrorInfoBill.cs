@@ -26,15 +26,49 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 {
                     return;
                 }
-                //预检前端选择数据
-                checkData();
                 //删除对应错误信息表中的数据
                 string filter = getSelectedRowsElements("fid");
                 string strSql = string.Format(@"/*dialect*/ Delete Allocationtable where fid in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
-                //将接口待处理表对应数据状态置为3 预检完成状态 供接口再次执行
+                //将接口待处理表对应数据状态置为0 等待抽数接口检查
                 filter = getSelectedRowsElements("FBILLNO");
-                strSql = string.Format(@"/*dialect*/ Update altablein set status=3 where id in ({0})", filter);
+                strSql = string.Format(@"/*dialect*/ Update altablein set status=0 where id in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+            }
+            //处理物料启用BOM管理，但是销售订单中未选中BOM版本
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "NoBom", StringComparison.CurrentCultureIgnoreCase))
+            {
+                if (!check("物料启用BOM管理，但是销售订单中未选中BOM版本"))
+                {
+                    return;
+                }
+                //删除对应错误信息表中的数据
+                string filter = getSelectedRowsElements("fid");
+                string strSql = string.Format(@"/*dialect*/ Delete Allocationtable where fid in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+                //将接口待处理表对应数据状态置为0 等待抽数接口检查
+                filter = getSelectedRowsElements("FBILLNO");
+                strSql = string.Format(@"/*dialect*/ Update altablein set status=0 where id in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+            }
+            //重新审核
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "ReAudit", StringComparison.CurrentCultureIgnoreCase))
+            {
+                if (!check("ReAudit"))
+                {
+                    return;
+                }
+                //预检前端选择数据
+                if (!checkData("ReAudit"))
+                {
+                    return;
+                }
+                //删除对应错误信息表中的数据
+                string filter = getSelectedRowsFErrorBillNo("FErrorBillNo");
+                string strSql = string.Format(@"/*dialect*/ Delete Allocationtable where FErrorBillNo in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+                //将接口待处理表对应数据状态置为5 3D业务人员手工审核成功
+                strSql = string.Format(@"/*dialect*/ Update altablein set status=5,ferrormsg='3D业务人员手工审核成功' where fbillno in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
             }
             //处理采购件无对应仓库
@@ -46,66 +80,58 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                     return;
                 }
 
-                string filter = getSelectedRowsElements("FBILLNO");
-                //判断前端数据中是否有非采购件数据 如果有直接return返回信息 
-                string strSql = string.Format(@"/*dialect*/ select id from altablein where id in ({0}) and isPur<>1  ", filter);
-                DynamicObjectCollection periodColl = DBUtils.ExecuteDynamicObject(this.Context, strSql);
-                if (periodColl.Count != 0)
+                //删除对应错误信息表中的数据
+                string filter = getSelectedRowsElements("fid");
+                string strSql = string.Format(@"/*dialect*/ Delete Allocationtable where fid in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+                //将接口待处理表对应数据状态置为0 等待抽数接口检查
+                filter = getSelectedRowsElements("FBILLNO");
+                strSql = string.Format(@"/*dialect*/ Update altablein set status=0 where id in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+            }
+            //物料未维护生产车间
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "NoProduction", StringComparison.CurrentCultureIgnoreCase))
+            {
+
+                if (!check("物料未维护生产车间"))
                 {
-                    string message = "单据编号为 ：";
-                    for (int i = 0; i < periodColl.Count; i++)
-                    {
-                        message = message + Convert.ToString(periodColl[i]["id"] + ",");
-                    }
-                    message.TrimEnd(',');
-                    message = message + "的报错信息并非采购件 无法处理！";
-                    //e.Cancel = true;
-                    this.View.ShowErrMessage(message);
                     return;
                 }
                 //删除对应错误信息表中的数据
-                strSql = string.Format(@"/*dialect*/ Delete Allocationtable where FBILLNO in ({0})", filter);
-
+                string filter = getSelectedRowsElements("fid");
+                string strSql = string.Format(@"/*dialect*/ Delete Allocationtable where fid in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
-                //把选中数据的仓库号更新 并把status=0
-                strSql = string.Format(@"/*dialect*/ update altablein set PurStockId=a.FNUMBER,status=0 from (
-select distinct tbs.FNUMBER,pr.salenumber,pr.linenumber from
-altablein pr left join   T_SAL_ORDER tso on pr.Salenumber=tso.FBILLNO left join  T_SAL_ORDERENTRY tsoe on tso.fid=tsoe.FID and pr.Linenumber=tsoe.FSEQ
-  left join Purchase2Stock ps on tsoe.FMATERIALID=ps.FMATERIAL left join t_BD_Stock tbs on tbs.FSTOCKID=ps.FSTOCK
-where pr.isPur=1
-and pr.id in  ({0})
- ) a where altablein.salenumber=a.salenumber and altablein.linenumber=a.linenumber ", filter);
-
+                //将接口待处理表对应数据状态置为0 等待抽数接口检查
+                filter = getSelectedRowsElements("FBILLNO");
+                strSql = string.Format(@"/*dialect*/ Update altablein set status=0 where id in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
-
-
-                //查询没有对应仓库的采购件 写入错误信息表
-                strSql = string.Format(@"/*dialect*/ insert into  Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER,pr.linenumber LINENUMBER,pr.Packcode Packcode,id PRTABLEINID,
-'采购件无对应仓库' REASON,fdate FDATE,getdate() FSUBDATE from altablein pr where pr.status=0 and pr.PurStockId ='' and pr.isPur=1 and pr.id in ({0})", filter);
-                DBUtils.Execute(this.Context, strSql);
-                //把采购件无对应仓库的数据 status标识为2
-                strSql = string.Format(@"/*dialect*/update altablein set status=2, ferrormsg='采购件无对应仓库'
-where  altablein.status=0 and altablein.PurStockId ='' and altablein.isPur=1 and altablein.Warehouseout<>'7.01' and altablein.id in ({0})", filter);
-                DBUtils.Execute(this.Context, strSql);
-                //剩余的 把status=3
-                strSql = string.Format(@"/*dialect*/update altablein set status=3 where altablein.status<>2 and altablein.id in ({0})", filter);
-                DBUtils.Execute(this.Context, strSql);
-
-
             }
+            
             this.View.Refresh();
         }
-        private void checkData()
+        private Boolean checkData(String key)
         {
-            string filter = getSelectedRowsElements("FBILLNO");
-            //查询无上游单据数据 写入错误信息表
-            string strSql = string.Format(@"/*dialect*/	INSERT INTO Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,packcode,id PRTABLEINID,
-'无对应销售订单' REASON,fdate FDATE,getdate() FSUBDATE from altablein de 
-left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
-from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
-on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
-where de.status=0 and (a.fid is null or a.FDETAILID is null) and de.id in ({0})", filter);
-            DBUtils.Execute(this.Context, strSql);
+            if (string.Equals(key, "ReAudit", StringComparison.CurrentCultureIgnoreCase))
+            {
+                string filter = getSelectedRowsFErrorBillNo("FErrorBillNo");
+                //查询无上游单据数据 写入错误信息表
+                string strSql = string.Format(@"/*dialect*/	select distinct FBILLNO from T_STK_STKTRANSFERIN where FDOCUMENTSTATUS='B' and FBILLNO in ({0})", filter);
+                DynamicObjectCollection FBILLNOCol = DBUtils.ExecuteDynamicObject(this.Context, strSql);
+                if (FBILLNOCol.Count>0)
+                {
+                    string message = "单据编号为 ：";
+                    for (int i = 0; i < FBILLNOCol.Count; i++)
+                    {
+                        message = message + Convert.ToString(FBILLNOCol[i]["FBILLNO"] + ",");
+                    }
+                    message.TrimEnd(',');
+                    message = message + "的直接调拨单尚未审核！";
+                    //e.Cancel = true;
+                    this.View.ShowErrMessage(message);
+                    return false;
+                }
+            }
+            return true;
         }
         private string getSelectedRowsElements(String key)
         {
@@ -118,41 +144,86 @@ where de.status=0 and (a.fid is null or a.FDETAILID is null) and de.id in ({0})"
             Elements = Elements.TrimEnd(',');
             return Elements;
         }
+        private string getSelectedRowsFErrorBillNo(String key)
+        {
+            ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
+            string Elements = string.Empty;
+            for (int i = 0; i < selectRows.Count(); i++)
+            {
+                Elements = Elements +"'"+ Convert.ToString(selectRows[i].DataRow[key]) +"'"+ ",";
+            }
+            Elements = Elements.TrimEnd(',');
+            return Elements;
+        }
         private Boolean check(String key)
         {
-
+            //获取选中行
             ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
-
-
+            //检查选中行数
             if (selectRows.Count() < 1)
             {
                 this.View.ShowErrMessage("请至少选中一条数据！");
                 return false;
             }
 
-            //判断报错信息是否一致
-
-            string Reason = Convert.ToString(selectRows[0].DataRow["FREASON"]);
-            for (int i = 1; i < selectRows.Count(); i++)
+            //判断问题类型
+            if (string.Equals(key, "ReAudit", StringComparison.CurrentCultureIgnoreCase))
             {
-                if (string.Equals(Reason, Convert.ToString(selectRows[i].DataRow["FREASON"]), StringComparison.CurrentCultureIgnoreCase))
+
+                string Reason = "更新库存不成功！";
+                for (int i = 1; i < selectRows.Count(); i++)
                 {
-                    Reason = Convert.ToString(selectRows[i].DataRow["FREASON"]);
+                    if (Convert.ToString(selectRows[i].DataRow["FREASON"]).Length >= 8 && !string.Equals(Reason, GetLastStr(Convert.ToString(selectRows[i].DataRow["FREASON"]),8), StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        this.View.ShowErrMessage("只能选择由于库存不足导致审核失败问题！");
+                        return false;
+                    }
                 }
-                else
+                return true;
+
+            }
+            else
+            {
+                //判断报错信息是否一致
+                string Reason = Convert.ToString(selectRows[0].DataRow["FREASON"]);
+                for (int i = 0; i < selectRows.Count(); i++)
                 {
-                    this.View.ShowErrMessage("选中数据必须为相同问题类型！");
+                    if (string.Equals(Reason, Convert.ToString(selectRows[i].DataRow["FREASON"]), StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        Reason = Convert.ToString(selectRows[i].DataRow["FREASON"]);
+                    }
+                    else
+                    {
+                        this.View.ShowErrMessage("选中数据必须为相同问题类型！");
+                        return false;
+                    }
+                }
+
+                if (!string.Equals(Reason, key, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    this.View.ShowErrMessage("请选择正确的处理方法！");
                     return false;
+
                 }
+                return true;
             }
 
-            if (!string.Equals(Reason, key, StringComparison.CurrentCultureIgnoreCase))
+        }
+        /// <summary>
+        /// 获取后几位数
+        /// </summary>
+        /// <param name="str">要截取的字符串</param>
+        /// <param name="num">返回的具体位数</param>
+        /// <returns>返回结果的字符串</returns>
+        public string GetLastStr(string str, int num)
+        {
+            int count = 0;
+            if (str.Length > num)
             {
-                this.View.ShowErrMessage("请选择正确的处理方法！");
-                return false;
-
+                count = str.Length - num;
+                str = str.Substring(count, num);
             }
-            return true;
+            return str;
         }
     }
 }

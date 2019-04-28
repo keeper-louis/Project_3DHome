@@ -63,13 +63,9 @@ v.packcode=pr.packcode and v.scantime=pr.scantime) group by salenumber,linenumbe
  ");
             DBUtils.Execute(ctx, strSql);
 
-
-            ////标识过期数据 status=4
-            //strSql = @"/*dialect*/ update altable set status = 4 where Scantime< '2018-12-1' and status=0 ";
-            //DBUtils.Execute(ctx, strSql);
             //去除packcode第二次数据 status=2
             strSql = @"/*dialect*/update altable set status=2 from (
-select Salenumber,Linenumber,Packcode,max(Scantime) Scantime from altable group by Salenumber,Linenumber,Packcode) a
+select Salenumber,Linenumber,Packcode,min(Scantime) Scantime from altable group by Salenumber,Linenumber,Packcode) a
  where altable.Salenumber=a.Salenumber and altable.Linenumber=a.Linenumber and altable.Packcode=a.Packcode and altable.Scantime<>a.Scantime and status=0 ";
             DBUtils.Execute(ctx, strSql);
 
@@ -80,17 +76,17 @@ select Salenumber,Linenumber,Packcode,max(Scantime) Scantime from altable group 
             //把接口数据表中status全置为1 （已插入到待录入表的数据状态）
             strSql = @"/*dialect*/update altable set status=1 where  status=0 ";
             DBUtils.Execute(ctx, strSql);
-
-  
-
-
         }
         private void checkData(Context ctx)
         {
+            //删除amount=0的数据
+            string strSql = string.Format(@"/*dialect*/delete altablein where amount=0 ");
+            DBUtils.Execute(ctx, strSql);
+
 
             //把已存在于错误信息表中s/l/t相同的数据直接写入到 错误信息表中 
-            string strSql = string.Format(@"/*dialect*/INSERT INTO Allocationtable select pr.id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER, pr.linenumber LINENUMBER,pr.Packcode, pr.id PRTABLEINID,
-    prt.Reason, pr.fdate FDATE, getdate() FSUBDATE from altablein pr, Allocationtable prt
+            strSql = string.Format(@"/*dialect*/INSERT INTO Allocationtable select pr.id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER, pr.linenumber LINENUMBER,pr.Packcode, pr.id PRTABLEINID,
+    prt.Reason, pr.fdate FDATE, getdate() FSUBDATE,'' from altablein pr, Allocationtable prt
     where pr.salenumber = prt.Salenumber and pr.linenumber = prt.Linenumber and pr.status = 0 ");
             DBUtils.Execute(ctx, strSql);
 
@@ -102,7 +98,7 @@ where altablein.salenumber=prt.Salenumber and altablein.linenumber=prt.Linenumbe
 
             //查询无上游单据数据 写入错误信息表
             strSql = string.Format(@"/*dialect*/	INSERT INTO Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,packcode,id PRTABLEINID,
-'无对应销售订单' REASON,fdate FDATE,getdate() FSUBDATE from altablein de 
+'无对应销售订单' REASON,fdate FDATE,getdate() FSUBDATE,'' from altablein de 
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
@@ -120,7 +116,7 @@ where de.status=0 and (a.fid is null or a.FDETAILID is null) ) b where  altablei
 
             //查询物料启用BOM管理，但是销售订单中未选中BOM版本
             strSql = string.Format(@"/*dialect*/ INSERT INTO Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,packcode,id PRTABLEINID,
-'物料启用BOM管理，但是销售订单中未选中BOM版本' REASON,fdate FDATE,getdate() FSUBDATE from altablein de 
+'物料启用BOM管理，但是销售订单中未选中BOM版本' REASON,fdate FDATE,getdate() FSUBDATE,'' from altablein de 
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tsoe.FBOMID,tbm.FISENABLE
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialInvPty tbm
  where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FINVPTYID='10003') a
@@ -141,7 +137,7 @@ where a.FISENABLE=1 and a.FBOMID=0 and de.status=0 ) b where  altablein.id=b.id"
 
             //查询物料未维护生产车间
             strSql = string.Format(@"/*dialect*/ INSERT INTO Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,packcode,id PRTABLEINID,
-'物料未维护生产车间' REASON,fdate FDATE,getdate() FSUBDATE from altablein de 
+'物料未维护生产车间' REASON,fdate FDATE,getdate() FSUBDATE,'' from altablein de 
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tbm.FWorkShopId
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, t_BD_MaterialProduce tbm,t_BD_MaterialBase tbmb
  where tso.fid=tsoe.FID and tsoe.FMATERIALID=tbm.FMATERIALID and tbm.FMATERIALID=tbmb.FMATERIALID and FERPCLSID <> '1') a
@@ -190,7 +186,7 @@ and pr.status=0
 
             //查询没有对应仓库的采购件 写入错误信息表
             strSql = string.Format(@"/*dialect*/ insert into  Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER,pr.linenumber LINENUMBER,pr.Packcode Packcode,id PRTABLEINID,
-'采购件无对应仓库' REASON,fdate FDATE,getdate() FSUBDATE from altablein pr where pr.status=0 and pr.PurStockId ='' and pr.isPur=1");
+'采购件无对应仓库' REASON,fdate FDATE,getdate() FSUBDATE,'' from altablein pr where pr.status=0 and pr.PurStockId ='' and pr.isPur=1");
             DBUtils.Execute(ctx, strSql);
             //把采购件无对应仓库的数据 status标识为2
             strSql = string.Format(@"/*dialect*/update altablein set status=2, ferrormsg='采购件无对应仓库' where  altablein.status=0 
