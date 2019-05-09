@@ -22,8 +22,8 @@ namespace KEN.K3._3D.Delivery.PUSH.ScheduleServicePlugIn
     {
         public void Run(Context ctx, Schedule schedule)
         {
-            ctx.UserId = 143108;
-            ctx.UserName = "demo";
+            ctx.UserId = 101901;
+            ctx.UserName = "扫码专用账户";
             //判断需要审核的单据
             if (_3DServiceHelper.isTransfer(ctx, ObjectEnum.SO2DE, UpdatePrtableinEnum.Audit))
             {

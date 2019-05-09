@@ -27,7 +27,7 @@ namespace KEN.K3._3D.AltablePumpingData
             string strSql = string.Format(@"/*dialect*/drop table Allocationview");
             DBUtils.Execute(ctx, strSql);
             //从视图插入数据到视图物理表
-            strSql = string.Format(@"/*dialect*/select*,CONVERT(varchar(10),scantime, 120) fdate into  Allocationview from [192.168.1.77].[DB].dbo.Allocationview v ");
+            strSql = string.Format(@"/*dialect*/select*,CONVERT(varchar(10),scantime, 120) fdate into  Allocationview from [192.168.1.77].[DB].dbo.Allocationview v where scantime>='2019-5-1'");
             DBUtils.Execute(ctx, strSql);
 
             //删除问题数据
@@ -84,34 +84,23 @@ select Salenumber,Linenumber,Packcode,min(Scantime) Scantime from altable group 
             DBUtils.Execute(ctx, strSql);
 
 
-            //把已存在于错误信息表中s/l/t相同的数据直接写入到 错误信息表中 
-            strSql = string.Format(@"/*dialect*/INSERT INTO Allocationtable select pr.id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER, pr.linenumber LINENUMBER,pr.Packcode, pr.id PRTABLEINID,
-    prt.Reason, pr.fdate FDATE, getdate() FSUBDATE,'' from altablein pr, Allocationtable prt
-    where pr.salenumber = prt.Salenumber and pr.linenumber = prt.Linenumber and pr.status = 0 ");
-            DBUtils.Execute(ctx, strSql);
-
-
-            //把已存在于错误信息表中s/l/t相同的数据status标识为2
-            strSql = string.Format(@"/*dialect*/	update altablein set status=2 from Allocationtable prt 
-where altablein.salenumber=prt.Salenumber and altablein.linenumber=prt.Linenumber and altablein.status=0");
-            DBUtils.Execute(ctx, strSql);
 
             //查询无上游单据数据 写入错误信息表
             strSql = string.Format(@"/*dialect*/	INSERT INTO Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,packcode,id PRTABLEINID,
 '无对应销售订单' REASON,fdate FDATE,getdate() FSUBDATE,'' from altablein de 
-left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tso.fdocumentstatus
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
-where de.status=0 and (a.fid is null or a.FDETAILID is null)
+where de.status=0 and (a.fid is null or a.FDETAILID is null or a.FDOCUMENTSTATUS<>'C')
 ");
             DBUtils.Execute(ctx, strSql);
             //把无上游单据status标识为2
             strSql = string.Format(@"/*dialect*/update altablein set status=2,ferrormsg='无对应销售订单' from 
 (select de.id from altablein de 
-left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tso.fdocumentstatus
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
-where de.status=0 and (a.fid is null or a.FDETAILID is null) ) b where  altablein.id=b.id");
+where de.status=0 and (a.fid is null or a.FDETAILID is null or a.FDOCUMENTSTATUS<>'C' ) ) b where  altablein.id=b.id");
             DBUtils.Execute(ctx, strSql);
 
             //查询物料启用BOM管理，但是销售订单中未选中BOM版本

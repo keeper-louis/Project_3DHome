@@ -68,7 +68,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 string strSql = string.Format(@"/*dialect*/ Delete Allocationtable where FErrorBillNo in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
                 //将接口待处理表对应数据状态置为5 3D业务人员手工审核成功
-                strSql = string.Format(@"/*dialect*/ Update altablein set status=5,ferrormsg='3D业务人员手工审核成功' where fbillno in ({0})", filter);
+                strSql = string.Format(@"/*dialect*/ Update altablein set status=5,ferrormsg='3D业务人员手工审核成功' where fbillno in ({0})  and status=2", filter);
                 DBUtils.Execute(this.Context, strSql);
             }
             //处理采购件无对应仓库

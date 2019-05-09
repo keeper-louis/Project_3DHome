@@ -24,8 +24,8 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
         private SalOrder2DirectTransList transferData;
         public void Run(Context ctx, Schedule schedule)
         {
-            ctx.UserId = 174881;
-            ctx.UserName = "demo1";
+            ctx.UserId = 101901;
+            ctx.UserName = "扫码专用账户";
             if (_3DServiceHelper.isTransfer(ctx, ObjectEnum.AlInStock, UpdateAltableinEnum.BeforeSave))
             {
                 transferData = _3DServiceHelper.getALSaveData(ctx, UpdateAltableinEnum.BeforeSave,ObjectEnum.AlInStock);//本次执行计划处理的数据

@@ -30,7 +30,7 @@ namespace KEN.K3._3D.DeliveryPumpingData
             DBUtils.Execute(ctx, strSql);
 
             //从视图插入数据到视图物理表
-            strSql = string.Format(@"/*dialect*/select*,CONVERT(varchar(10),scantime, 120) fdate into  Deliveryview from [192.168.1.77].[DB].dbo.Deliveryview v ");
+            strSql = string.Format(@"/*dialect*/select*,CONVERT(varchar(10),scantime, 120) fdate into  Deliveryview from [192.168.1.77].[DB].dbo.Deliveryview v where scantime>='2019-5-1'");
             DBUtils.Execute(ctx, strSql);
 
             //删除问题数据
@@ -103,34 +103,24 @@ and pr.status in (2,3) and pr.Ferrorstatus<>2");
             string strSql = string.Format(@"/*dialect*/delete detablein where amount=0 ");
             DBUtils.Execute(ctx, strSql);
 
-            //把已存在于错误信息表中s/l/t相同的数据直接写入到 错误信息表中 
-            strSql = string.Format(@"/*dialect*/INSERT INTO Deliverytable select pr.id FBILLNO,'A' FDOCUMENTSTATUS, pr.salenumber SALENUMBER, pr.linenumber LINENUMBER, pr.id PRTABLEINID,
-    prt.Reason, pr.fdate FDATE, getdate() FSUBDATE,'' from detablein pr, Deliverytable prt
-    where pr.salenumber = prt.Salenumber and pr.linenumber = prt.Linenumber and pr.status = 0 ");
-            DBUtils.Execute(ctx, strSql);
 
-
-            //把已存在于错误信息表中s/l/t相同的数据status标识为2
-            strSql = string.Format(@"/*dialect*/update detablein set status=2 from Deliverytable prt 
-where detablein.salenumber=prt.Salenumber and detablein.linenumber=prt.Linenumber and detablein.status=0");
-            DBUtils.Execute(ctx, strSql);
 
             //查询无上游单据数据 写入错误信息表
             strSql = string.Format(@"/*dialect*/INSERT INTO Deliverytable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,id PRTABLEINID,
 '无对应销售订单' REASON,fdate FDATE,getdate() FSUBDATE,'' from detablein de 
-left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tso.fdocumentstatus
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
-where de.status=0 and (a.fid is null or a.FDETAILID is null)
+where de.status=0 and (a.fid is null or a.FDETAILID is null or a.FDOCUMENTSTATUS<>'C')
 ");
             DBUtils.Execute(ctx, strSql);
             //把无上游单据status标识为2
             strSql = string.Format(@"/*dialect*/update detablein set status=2,ferrormsg='无对应销售订单' from 
 (select de.id from detablein de 
-left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
+left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ ,tso.fdocumentstatus
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
-where de.status=0 and (a.fid is null or a.FDETAILID is null) ) b where  detablein.id=b.id");
+where de.status=0 and (a.fid is null or a.FDETAILID is null or a.FDOCUMENTSTATUS<>'C' ) ) b where  detablein.id=b.id");
             DBUtils.Execute(ctx, strSql);
 
             //查询物料启用BOM管理，但是销售订单中未选中BOM版本
