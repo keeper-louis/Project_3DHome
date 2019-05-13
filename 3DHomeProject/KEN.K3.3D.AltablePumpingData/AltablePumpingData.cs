@@ -83,7 +83,9 @@ select Salenumber,Linenumber,Packcode,min(Scantime) Scantime from altable group 
             string strSql = string.Format(@"/*dialect*/delete altablein where amount=0 ");
             DBUtils.Execute(ctx, strSql);
 
-
+            strSql = string.Format(@"/*dialect*/update altablein set status=0 ,Fsubdate='1900-01-01 00:00:00.000',ferrorstatus=0,ferrormsg='' where ferrormsg='3D业务人员手工审核成功' and fbillno=''
+ ");
+            DBUtils.Execute(ctx, strSql);
 
             //查询无上游单据数据 写入错误信息表
             strSql = string.Format(@"/*dialect*/	INSERT INTO Allocationtable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,packcode,id PRTABLEINID,

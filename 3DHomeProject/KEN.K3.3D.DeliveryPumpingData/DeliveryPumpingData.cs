@@ -104,7 +104,6 @@ and pr.status in (2,3) and pr.Ferrorstatus<>2");
             DBUtils.Execute(ctx, strSql);
 
 
-
             //查询无上游单据数据 写入错误信息表
             strSql = string.Format(@"/*dialect*/INSERT INTO Deliverytable select id FBILLNO,'A' FDOCUMENTSTATUS, salenumber SALENUMBER,linenumber LINENUMBER,id PRTABLEINID,
 '无对应销售订单' REASON,fdate FDATE,getdate() FSUBDATE,'' from detablein de 
@@ -170,7 +169,7 @@ select id FBILLNO,'A' FDOCUMENTSTATUS, detablein.salenumber SALENUMBER,detablein
 '大于可出库数量' REASON,fdate FDATE,getdate() FSUBDATE,'' from detablein ,
  (select a.Salenumber,a.Linenumber
  from (select Salenumber,Linenumber,sum(Amount) amount from detablein where status=0 group by  Salenumber,Linenumber) a,
-  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FRemainOutQty amount
+  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FCANOUTQTY amount
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  )b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount) c
  where detablein.Salenumber=c.Salenumber and detablein.Linenumber=c.Linenumber  and detablein.status=0 ");
@@ -179,7 +178,7 @@ where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  )b where a.Salenumber=b.
             strSql = string.Format(@"/*dialect*/ update detablein set status=2 ,ferrormsg='大于可出库数量' from
  (select a.Salenumber,a.Linenumber
  from (select Salenumber,Linenumber,sum(Amount) amount from detablein where status=0 group by  Salenumber,Linenumber) a,
-  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FRemainOutQty amount
+  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FCANOUTQTY amount
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  )b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount) c
  where detablein.Salenumber=c.Salenumber and detablein.Linenumber=c.Linenumber  and detablein.status=0 ");
