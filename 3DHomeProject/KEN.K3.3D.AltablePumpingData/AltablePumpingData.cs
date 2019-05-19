@@ -26,8 +26,20 @@ namespace KEN.K3._3D.AltablePumpingData
             //清空视图物理表
             string strSql = string.Format(@"/*dialect*/drop table Allocationview");
             DBUtils.Execute(ctx, strSql);
-            //从视图插入数据到视图物理表
-            strSql = string.Format(@"/*dialect*/select*,CONVERT(varchar(10),scantime, 120) fdate into  Allocationview from [192.168.1.77].[DB].dbo.Allocationview v where scantime>='2019-5-1'");
+             strSql = string.Format(@"/*dialect*/drop table Tatest ");
+            DBUtils.Execute(ctx, strSql);
+            strSql = string.Format(@"/*dialect*/ select* into Tatest from[192.168.1.77].[DB].dbo.Allocationview");
+            DBUtils.Execute(ctx, strSql);
+
+
+//从视图插入数据到视图物理表
+            strSql = string.Format(@"/*dialect*/select*,CONVERT(varchar(10),scantime, 120) fdate into  Allocationview from Tatest v where scantime>='2019-5-1'");
+            DBUtils.Execute(ctx, strSql);
+
+
+            strSql = string.Format(@"/*dialect*/ insert into Allocationview select c.*,CONVERT(varchar(10),c.scantime, 120) fdate  from  Tatest c ,
+(select * from detablein a where not exists (select * from altablein b where a.Salenumber=b.Salenumber and a.Linenumber=b.Linenumber )) d
+where c.salenumber=d.Salenumber and c.linenumber=d.Linenumber and c.scantime<'2019-5-1'");
             DBUtils.Execute(ctx, strSql);
 
             //删除问题数据
@@ -187,6 +199,15 @@ and altablein.PurStockId ='' and altablein.isPur=1 and altablein.Warehouseout<>'
             //标识为 3 预检完成准备入库状态
             strSql = string.Format(@"/*dialect*/ update altablein set status=3 where  status=0  ");
             DBUtils.Execute(ctx, strSql);
+
+            strSql = string.Format(@"/*dialect*/ update Allocationtable set fdate = '2019-05-1 00:00:00.000' where fdate< '2019-05-1 00:00:00.000'  ");
+            DBUtils.Execute(ctx, strSql);
+
+            strSql = string.Format(@"/*dialect*/ update altablein set fdate = '2019-05-1 00:00:00.000' where fdate< '2019-05-1 00:00:00.000'  ");
+            DBUtils.Execute(ctx, strSql);
+            
+
+
 
         }
     }

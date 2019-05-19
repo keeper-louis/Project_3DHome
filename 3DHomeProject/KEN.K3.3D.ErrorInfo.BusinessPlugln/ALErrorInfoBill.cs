@@ -86,7 +86,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 DBUtils.Execute(this.Context, strSql);
                 //将接口待处理表对应数据状态置为0 等待抽数接口检查
                 filter = getSelectedRowsElements("FBILLNO");
-                strSql = string.Format(@"/*dialect*/ Update altablein set status=0 where id in ({0})", filter);
+                strSql = string.Format(@"/*dialect*/ Update altablein set status=0,isPur=0 where id in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
             }
             //物料未维护生产车间
