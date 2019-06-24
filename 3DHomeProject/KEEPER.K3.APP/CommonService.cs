@@ -1311,7 +1311,7 @@ and alt.isPur=0
             }
             if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlTransfer)
             {
-                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=4 and ferrorstatus=0 order by fdate");
+                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=4 and ferrorstatus=0 and  Warehouseout='8'  order by fdate");
                 DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
                 if (dateData.Count() > 0)
                 {
@@ -1337,6 +1337,7 @@ and alt.isPur=0
  inner join t_sal_orderentry orderentry
     on salorder.fid = orderentry.fid
    and alt.linenumber = orderentry.fseq
+and alt.Warehouseout='8'
  where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
                     DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                     List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
@@ -1362,7 +1363,60 @@ and alt.isPur=0
                 }
                 else
                 {
-                    return null;
+                     strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=4 and ferrorstatus=0 and  Warehouseout<>'8'  order by fdate");
+                     dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
+                    if (dateData.Count() > 0)
+                    {
+                        SalOrder2DirectTransList list = new SalOrder2DirectTransList();
+                        list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
+                        string strSql = string.Format(@"/*dialect*/select top 500 alt.fdate,
+       alt.id,
+       alt.salenumber,
+       alt.linenumber,
+       alt.Packcode,
+       orderentry.FMATERIALID,
+       orderentry.FAUXPROPID,
+       orderentry.FLOT,
+        orderentry.Fbomid,
+       alt.amount,
+       alt.Warehouseout,
+	   alt.Warehousein
+  from altablein alt
+ inner join t_sal_order salorder
+    on alt.salenumber = salorder.fbillno
+   and alt.status = 4
+ and alt.ferrorstatus=0
+ inner join t_sal_orderentry orderentry
+    on salorder.fid = orderentry.fid
+   and alt.linenumber = orderentry.fseq
+and alt.Warehouseout<>'8'
+ where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
+                        DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
+                        List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
+                        foreach (DynamicObject purTransferData in PurTransferData)
+                        {
+                            SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
+                            salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
+                            salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
+                            salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
+                            salEntryData.lineNumber = Convert.ToString(purTransferData["linenumber"]);
+                            salEntryData.packcode = Convert.ToString(purTransferData["Packcode"]);
+                            salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
+                            salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
+                            salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
+                            salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
+                            salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                            salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
+                            salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
+                            salEntryDataList.Add(salEntryData);
+                        }
+                        list.SalOrder2DirectTrans = salEntryDataList;
+                        return list;
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
 
             }
