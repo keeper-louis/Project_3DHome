@@ -120,7 +120,7 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
             //如果预知有多条分录，可以使用这个方法进行批量新增
             if (num!=1)
             {
-                ((IBillView)dynamicFormView).Model.BatchCreateNewEntryRow("FBillEntry", num-1);
+                ((IBillView)dynamicFormView).Model.BatchCreateNewEntryRow("FBillEntry", num);
             }
             //((IBillView)dynamicFormView).Model.BatchCreateNewEntryRow("FBillEntry", num);
             for (int i = 0; i < a.Count; i++)
