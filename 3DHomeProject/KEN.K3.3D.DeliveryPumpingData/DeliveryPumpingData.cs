@@ -49,7 +49,8 @@ or t_BD_Material.fnumber  like '10.403%' or t_BD_Material.fnumber  like '10.404%
 or t_BD_Material.fnumber  like '10.405%'
 or t_BD_Material.fnumber  like '10.406%' or t_BD_Material.fnumber  like '10.407%' 
 or t_BD_Material.fnumber  like '10.408%' or t_BD_Material.fnumber  like '10.409%'  
-or t_BD_Material.fnumber  like '10.410%' or t_BD_Material.fnumber  like '10.411%'
+or t_BD_Material.fnumber  like '10.410%' or t_BD_Material.fnumber  like '10.411%' 
+or t_BD_Material.fnumber  like '10.412%' 
 or t_BD_Material.fnumber  like '01.07.0142%' or t_BD_Material.fnumber  like '05.902.2027.225.215%' 
 or t_BD_Material.fnumber  like '05.902.2027.435.215%' or t_BD_Material.fnumber  like '05.902.2027.827.225%'
 or t_BD_Material.fnumber  like '05.902.2027.827.435%' or t_BD_Material.fnumber  like '06.03.0003%' 
@@ -59,6 +60,18 @@ or t_BD_Material.fnumber  like '06.99.0045%') and tso.FBILLNO=alt.Salenumber and
  group by  alt.Salenumber,alt.Linenumber,alt.Amount,T_BD_MATERIAL_L.FNAME) a 
  where Deliveryview.Salenumber=a.Salenumber and Deliveryview.Linenumber=a.Linenumber
  and Deliveryview.scantime<>a.scantime ");
+            DBUtils.Execute(ctx, strSql);
+
+            //删除重复扫码数据
+            strSql = string.Format(@"/*dialect*/ delete Deliveryview from
+  (select alt.Salenumber,alt.Linenumber,alt.Amount,min(alt.scantime) scantime,T_BD_MATERIAL_L.FNAME,t_BD_Material.fnumber
+  from T_SAL_ORDERENTRY  tsoe , T_SAL_ORDER tso,t_BD_Material t_BD_Material,T_BD_MATERIAL_L T_BD_MATERIAL_L,Deliveryview alt
+   where tsoe.fid=tso.fid and t_BD_Material.FMASTERID=T_BD_MATERIAL_L.FMATERIALID
+  and t_BD_Material.FMATERIALID=tsoe.FMATERIALID and t_BD_Material.fnumber  like '10.501%' and (LEN(t_BD_Material.fnumber ) - LEN(REPLACE(t_BD_Material.fnumber , '.', '  ')))<=-5 
+  and tso.FBILLNO=alt.Salenumber and  tsoe.FSEQ=alt.Linenumber 
+ group by  alt.Salenumber,alt.Linenumber,alt.Amount,T_BD_MATERIAL_L.FNAME,t_BD_Material.fnumber) a 
+ where Deliveryview.Salenumber=a.Salenumber and Deliveryview.Linenumber=a.Linenumber
+ and Deliveryview.scantime<>a.scantime and  dbo.getField6Value(a.FNUMBER,'.')>=500 ");
             DBUtils.Execute(ctx, strSql);
 
             //匹配不存在于接口数据表的视图物理表的数据 插入到 接口数据表中

@@ -29,7 +29,7 @@ namespace KEN.K3._3D.Delivery.PUSH.ScheduleServicePlugIn
             {
 
                     //获取需要审核的单据cloudheadid
-                    string strSql = string.Format(@"/*dialect*/select distinct top 100  fcloudheadid from detablein where status = 4");
+                    string strSql = string.Format(@"/*dialect*/select distinct top 10  fcloudheadid from detablein where status = 4");
                     DynamicObjectCollection auditCol = DBUtils.ExecuteDynamicObject(ctx, strSql);
                     object[] ips = (from p in auditCol
                                     select p["fcloudheadid"]).ToArray();
