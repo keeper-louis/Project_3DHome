@@ -1648,6 +1648,8 @@ and alt.isPur=1
                 dt.TableName = "altablein";
                 var idCol = dt.Columns.Add("fcloudheadid");
                 idCol.DataType = typeof(long);
+                var statusCols = dt.Columns.Add("statuss");
+                statusCols.DataType = typeof(int);
                 var statusCol = dt.Columns.Add("status");
                 statusCol.DataType = typeof(int);
                 var subdate = dt.Columns.Add("Fsubdate");
@@ -1656,7 +1658,7 @@ and alt.isPur=1
                 dt.BeginLoadData();     // 执行此方法，可以提升灌入数据性能
                 foreach (var item in uyList)
                 {
-                    dt.LoadDataRow(new object[] { item.k3cloudheadID, i, DateTime.Now }, true);
+                    dt.LoadDataRow(new object[] { item.k3cloudheadID,1, i, DateTime.Now }, true);
                 }
                 dt.EndLoadData();
                 // 准备批量更新服务参数
@@ -1669,6 +1671,8 @@ and alt.isPur=1
                 // columnName: DataTable中的列名
                 // fieldName : 物料表格中匹配的字段名
                 batchUpdateParam.AddWhereExpression("fcloudheadid", KDDbType.Int64, "fcloudheadid");
+
+                batchUpdateParam.AddWhereExpression("statuss", KDDbType.Int32, "status");
                 // 设置待更新的字段
                 // columnName: DataTable中的列名
                 // fieldName : 对应的物料表格字段名

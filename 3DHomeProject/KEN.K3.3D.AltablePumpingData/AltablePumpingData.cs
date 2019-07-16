@@ -28,12 +28,13 @@ namespace KEN.K3._3D.AltablePumpingData
             DBUtils.Execute(ctx, strSql);
              strSql = string.Format(@"/*dialect*/drop table Tatest ");
             DBUtils.Execute(ctx, strSql);
-            strSql = string.Format(@"/*dialect*/ select* into Tatest from[192.168.1.77].[DB].dbo.Allocationview");
+            strSql = string.Format(@"/*dialect*/ select* into Tatest from[192.168.1.77].[DB].dbo.Allocationview where linenumber<>'' or linenumber is not null ");
             DBUtils.Execute(ctx, strSql);
 
 
 //从视图插入数据到视图物理表
-            strSql = string.Format(@"/*dialect*/select*,CONVERT(varchar(10),scantime, 120) fdate into  Allocationview from Tatest v where scantime>='2019-5-1'");
+            strSql = string.Format(@"/*dialect*/select*,CONVERT(varchar(10),scantime, 120) fdate into 
+                                            Allocationview from Tatest v where scantime>='2019-5-1' and (linenumber<>'' or linenumber is not null )");
             DBUtils.Execute(ctx, strSql);
 
 
@@ -44,6 +45,10 @@ where c.salenumber=d.Salenumber and c.linenumber=d.Linenumber and c.scantime<'20
 
             //删除问题数据
             strSql = string.Format(@"/*dialect*/delete Allocationview where linenumber in (select Linenumber from Allocationview de where PATINDEX('%[^0-9]%', de.Linenumber)<>0) ");
+            DBUtils.Execute(ctx, strSql);
+
+            //删除问题数据
+            strSql = string.Format(@"/*dialect*/delete Allocationview where linenumber ='' or linenumber is null or amount is null or amount ='' or amount=0 ");
             DBUtils.Execute(ctx, strSql);
 
             //删除重复扫码数据
