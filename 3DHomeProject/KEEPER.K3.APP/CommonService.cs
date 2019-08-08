@@ -1259,7 +1259,7 @@ order by de.fdate");
                 {
                     SalOrder2DirectTransList list = new SalOrder2DirectTransList();
                     list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
-                    string strSql = string.Format(@"/*dialect*/select top 500 alt.fdate,
+                    string strSql = string.Format(@"/*dialect*/select top 100 alt.fdate,
        alt.id,
        alt.salenumber,
        alt.linenumber,
@@ -1270,7 +1270,8 @@ order by de.fdate");
         orderentry.Fbomid,
        alt.amount,
        alt.Warehouseout,
-	   alt.Warehousein
+	   alt.Warehousein,
+	   t_BD_MaterialInvPty.FISENABLE
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -1280,6 +1281,8 @@ and alt.isPur=0
  inner join t_sal_orderentry orderentry
     on salorder.fid = orderentry.fid
    and alt.linenumber = orderentry.fseq
+   left join t_BD_MaterialInvPty 
+   on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
  where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
                         DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                         List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
@@ -1298,7 +1301,8 @@ and alt.isPur=0
                             salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
-                            salEntryDataList.Add(salEntryData);
+                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
+                        salEntryDataList.Add(salEntryData);
                         }
                     list.SalOrder2DirectTrans = salEntryDataList;
                     return list;
@@ -1317,7 +1321,7 @@ and alt.isPur=0
                 {
                     SalOrder2DirectTransList list = new SalOrder2DirectTransList();
                     list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
-                    string strSql = string.Format(@"/*dialect*/select top 500 alt.fdate,
+                    string strSql = string.Format(@"/*dialect*/select top 100 alt.fdate,
        alt.id,
        alt.salenumber,
        alt.linenumber,
@@ -1328,7 +1332,8 @@ and alt.isPur=0
         orderentry.Fbomid,
        alt.amount,
        alt.Warehouseout,
-	   alt.Warehousein
+	   alt.Warehousein,
+	   	   t_BD_MaterialInvPty.FISENABLE
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -1338,6 +1343,8 @@ and alt.isPur=0
     on salorder.fid = orderentry.fid
    and alt.linenumber = orderentry.fseq
 and alt.Warehouseout='8'
+   left join t_BD_MaterialInvPty 
+   on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
  where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
                     DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                     List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
@@ -1356,6 +1363,7 @@ and alt.Warehouseout='8'
                         salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
                         salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                         salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
+                        salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
                         salEntryDataList.Add(salEntryData);
                     }
                     list.SalOrder2DirectTrans = salEntryDataList;
@@ -1369,7 +1377,7 @@ and alt.Warehouseout='8'
                     {
                         SalOrder2DirectTransList list = new SalOrder2DirectTransList();
                         list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
-                        string strSql = string.Format(@"/*dialect*/select top 500 alt.fdate,
+                        string strSql = string.Format(@"/*dialect*/ select top 100 alt.fdate,
        alt.id,
        alt.salenumber,
        alt.linenumber,
@@ -1380,7 +1388,8 @@ and alt.Warehouseout='8'
         orderentry.Fbomid,
        alt.amount,
        alt.Warehouseout,
-	   alt.Warehousein
+	   alt.Warehousein,
+	   t_BD_MaterialInvPty.FISENABLE
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -1390,6 +1399,8 @@ and alt.Warehouseout='8'
     on salorder.fid = orderentry.fid
    and alt.linenumber = orderentry.fseq
 and alt.Warehouseout<>'8'
+   left join t_BD_MaterialInvPty 
+   on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
  where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
                         DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                         List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
@@ -1408,6 +1419,7 @@ and alt.Warehouseout<>'8'
                             salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
+                            salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
                             salEntryDataList.Add(salEntryData);
                         }
                         list.SalOrder2DirectTrans = salEntryDataList;
@@ -1428,7 +1440,7 @@ and alt.Warehouseout<>'8'
                 {
                     SalOrder2DirectTransList list = new SalOrder2DirectTransList();
                     list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
-                    string strSql = string.Format(@"/*dialect*/select top 500 alt.fdate,
+                    string strSql = string.Format(@"/*dialect*/select top 100 alt.fdate,
        alt.id,
        alt.salenumber,
        alt.linenumber,
@@ -1439,7 +1451,8 @@ and alt.Warehouseout<>'8'
         orderentry.Fbomid,
        alt.amount,
         alt.PurStockId Warehouseout,
-	   '0' Warehousein
+	   '0' Warehousein,
+	   t_BD_MaterialInvPty.FISENABLE
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -1449,6 +1462,8 @@ and alt.isPur=1
  inner join t_sal_orderentry orderentry
     on salorder.fid = orderentry.fid
    and alt.linenumber = orderentry.fseq
+      left join t_BD_MaterialInvPty 
+   on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
  where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
                     DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                     List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
@@ -1467,6 +1482,7 @@ and alt.isPur=1
                         salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
                         salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                         salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
+                        salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
                         salEntryDataList.Add(salEntryData);
                     }
                     list.SalOrder2DirectTrans = salEntryDataList;

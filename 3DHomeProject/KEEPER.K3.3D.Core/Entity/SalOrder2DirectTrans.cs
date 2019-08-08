@@ -69,6 +69,12 @@ namespace KEEPER.K3._3D.Core.Entity
             /// 入库仓库编码
             /// </summary>
             public string stocknumberin { get; set; }
+
+        /// <summary>
+        /// 是否启用BOM版本管理
+        /// </summary>
+        public string FISENABLE { get; set; }
         
+
     }
 }

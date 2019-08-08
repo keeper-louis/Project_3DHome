@@ -55,7 +55,8 @@ or t_BD_Material.fnumber  like '10.405%'
 or t_BD_Material.fnumber  like '10.406%' or t_BD_Material.fnumber  like '10.407%' 
 or t_BD_Material.fnumber  like '10.408%' or t_BD_Material.fnumber  like '10.409%'  
 or t_BD_Material.fnumber  like '10.410%' or t_BD_Material.fnumber  like '10.411%' 
-or t_BD_Material.fnumber  like '10.412%' 
+or t_BD_Material.fnumber  like '10.412%'
+or t_BD_Material.fnumber  like '10.413%'
 or t_BD_Material.fnumber  like '01.07.0142%' or t_BD_Material.fnumber  like '05.902.2027.225.215%' 
 or t_BD_Material.fnumber  like '05.902.2027.435.215%' or t_BD_Material.fnumber  like '05.902.2027.827.225%'
 or t_BD_Material.fnumber  like '05.902.2027.827.435%' or t_BD_Material.fnumber  like '06.03.0003%' 
@@ -99,7 +100,7 @@ or t_BD_Material.fnumber  like '06.99.0045%') and tso.FBILLNO=alt.Salenumber and
   and tso.FBILLNO=alt.Salenumber and  tsoe.FSEQ=alt.Linenumber 
  group by  alt.Salenumber,alt.Linenumber,alt.Amount,T_BD_MATERIAL_L.FNAME,t_BD_Material.fnumber) a 
  where Deliveryview.Salenumber=a.Salenumber and Deliveryview.Linenumber=a.Linenumber
- and Deliveryview.scantime<>a.scantime and  dbo.getField6Value(a.FNUMBER,'.')>=500 ");
+ and Deliveryview.scantime<>a.scantime and  dbo.getField6Value(a.FNUMBER,'.')>=500 and  dbo.getField4Value(a.FNUMBER,'.')>0 and dbo.getField5Value(a.FNUMBER,'.')>0  ");
             DBUtils.Execute(ctx, strSql);
 
 

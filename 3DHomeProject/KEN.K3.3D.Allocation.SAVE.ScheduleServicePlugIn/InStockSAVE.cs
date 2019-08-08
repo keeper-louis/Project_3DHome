@@ -14,6 +14,7 @@ using KEEPER.K3._3D.Core.Entity;
 using Kingdee.BOS.Core.Bill;
 using Kingdee.BOS.Core.Validation;
 using KEEPER.K3._3D.Core.ParamOption;
+using Kingdee.BOS.App.Data;
 
 namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
 {
@@ -136,7 +137,7 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
                 //包装码
                 dynamicFormView.UpdateValue("Fpackcode", i, a[i].packcode);
                 //BOMID
-                if (!a[i].Fbomid.Equals(""))
+                if (!a[i].Fbomid.Equals("")&& a[i].FISENABLE.Equals("1"))
                 {
                     dynamicFormView.SetItemValueByID("FBomId",a[i].Fbomid,i);
                 }

@@ -147,7 +147,7 @@ namespace KEN.K3._3D.Allocation.SAVE.ScheduleServicePlugIn
                 //altablein 内码
                 dynamicFormView.UpdateValue("Faltableinid", i, a[i].altID);
                 //BOMID
-                if (!a[i].Fbomid.Equals(""))
+                if (!a[i].Fbomid.Equals("") && a[i].FISENABLE.Equals("1"))
                 {
                     dynamicFormView.SetItemValueByID("FBomId", a[i].Fbomid, i);
                 }
