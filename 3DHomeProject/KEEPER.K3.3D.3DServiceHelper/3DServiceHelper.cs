@@ -129,6 +129,11 @@ namespace KEEPER.K3._3D._3DServiceHelper
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
             return service.getALSaveData(ctx, status, Obstatus);
         }
+        public static SalOrder2DirectTransList getALInstockSaveData(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus,long workshopid)
+        {
+            ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);
+            return service.getALInstockSaveData(ctx, status, Obstatus, workshopid);
+        }
         public static Boolean isTransfer(Context ctx, ObjectEnum Obstatus, UpdateAltableinEnum status)
         {
             ICommonService service = KEEPER.K3._3D.Contracts.ServiceFactory.GetService<ICommonService>(ctx);

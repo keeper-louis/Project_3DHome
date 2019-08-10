@@ -169,6 +169,16 @@ namespace KEEPER.K3._3D.Contracts
         [FaultContract(typeof(ServiceFault))]
         SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus);
         /// <summary>
+        /// 获取调拨中间表按照车间进行获取数据源
+        /// </summary>
+        /// <param name="ctx"></param>
+        /// <param name="Obstatus">业务类别码</param>
+        /// <param name="workshopid">车间ID</param>
+        /// <returns></returns>
+        [OperationContract]
+        [FaultContract(typeof(ServiceFault))]
+        SalOrder2DirectTransList getALInstockSaveData(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus,long workshopid);
+        /// <summary>
         /// 判断是否继续进入直接调拨计划
         /// </summary>
         /// <param name="ctx"></param>

@@ -1250,16 +1250,16 @@ order by de.fdate");
         #region 获取调拨数据集合
         public SalOrder2DirectTransList getALSaveData(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus)
         {
-            
+
             if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlInStock)
             {
                 string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=3 and isPur =0 and ferrorstatus=0 order by fdate");
                 DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
                 if (dateData.Count() > 0)
                 {
-                    SalOrder2DirectTransList list = new SalOrder2DirectTransList();
-                    list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
-                    string strSql = string.Format(@"/*dialect*/select top 100 alt.fdate,
+                        SalOrder2DirectTransList list = new SalOrder2DirectTransList();
+                        list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
+                        string strSql = string.Format(@"/*dialect*/select top 100 alt.fdate,
        alt.id,
        alt.salenumber,
        alt.linenumber,
@@ -1283,12 +1283,12 @@ and alt.isPur=0
    and alt.linenumber = orderentry.fseq
    left join t_BD_MaterialInvPty 
    on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
- where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
+ where alt.fdate = '{0}'    ", Convert.ToDateTime(dateData[0]["fdate"]));
                         DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                         List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
                         foreach (DynamicObject purTransferData in PurTransferData)
                         {
-                        SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
+                            SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
                             salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
                             salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
                             salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
@@ -1301,18 +1301,21 @@ and alt.isPur=0
                             salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
-                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
-                        salEntryDataList.Add(salEntryData);
+                            salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
+                            salEntryDataList.Add(salEntryData);
                         }
-                    list.SalOrder2DirectTrans = salEntryDataList;
-                    return list;
-                }
+                        list.SalOrder2DirectTrans = salEntryDataList;
+                        return list;
+                    }
+                
                 else
                 {
                     return null;
                 }
 
-            }
+                }
+            
+            
             if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlTransfer)
             {
                 string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=4 and ferrorstatus=0 and  Warehouseout='8'  order by fdate");
@@ -2585,6 +2588,84 @@ and alt.isPur=1
                 throw;
             }
             return tableName;
+        }
+
+        public SalOrder2DirectTransList getALInstockSaveData(Context ctx, UpdateAltableinEnum status, ObjectEnum Obstatus, long workshopid)
+        {
+
+            if (status == UpdateAltableinEnum.BeforeSave && Obstatus == ObjectEnum.AlInStock)
+            {
+                string strDateSql = string.Format(@"/*dialect*/select top 1 fdate from altablein where status=3 and isPur =0 and ferrorstatus=0 order by fdate");
+                DynamicObjectCollection dateData = DBUtils.ExecuteDynamicObject(ctx, strDateSql, null);
+                if (dateData.Count() > 0)
+                {
+                    
+                        SalOrder2DirectTransList list = new SalOrder2DirectTransList();
+                        list.BusinessDate = Convert.ToDateTime(dateData[0]["fdate"]);
+                        string strSql = string.Format(@"/*dialect*/select top 100 alt.fdate,
+       alt.id,
+       alt.salenumber,
+       alt.linenumber,
+       alt.Packcode,
+       orderentry.FMATERIALID,
+       orderentry.FAUXPROPID,
+       orderentry.FLOT,
+        orderentry.Fbomid,
+       alt.amount,
+       alt.Warehouseout,
+	   alt.Warehousein,
+	   t_BD_MaterialInvPty.FISENABLE
+  from altablein alt
+ inner join t_sal_order salorder
+    on alt.salenumber = salorder.fbillno
+   and alt.status = 3
+and alt.isPur=0
+ and alt.ferrorstatus=0
+ inner join t_sal_orderentry orderentry
+    on salorder.fid = orderentry.fid
+   and alt.linenumber = orderentry.fseq
+   left join t_BD_MaterialInvPty 
+   on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
+left join t_BD_MaterialBase tbmb on  tbmb.FMATERIALID=orderentry.FMATERIALID
+left join  t_BD_MaterialProduce tbm on   tbm.FMATERIALID=tbmb.FMATERIALID 
+where alt.fdate = '{0}'  and tbm.FWORKSHOPID={1} ", Convert.ToDateTime(dateData[0]["fdate"]), workshopid);
+                        DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
+                        List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
+                        foreach (DynamicObject purTransferData in PurTransferData)
+                        {
+                            SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
+                            salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
+                            salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
+                            salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
+                            salEntryData.lineNumber = Convert.ToString(purTransferData["linenumber"]);
+                            salEntryData.packcode = Convert.ToString(purTransferData["Packcode"]);
+                            salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
+                            salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
+                            salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
+                            salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
+                            salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                            salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
+                            salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
+                            salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
+                            salEntryDataList.Add(salEntryData);
+                        }
+                        list.SalOrder2DirectTrans = salEntryDataList;
+                        return list;
+                    
+                }
+                else
+                {
+                    return null;
+                }
+
+            }
+            else
+            {
+                return null;
+            }
+
+
+           // throw new NotImplementedException();
         }
     }
 }
