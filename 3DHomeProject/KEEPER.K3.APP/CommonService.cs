@@ -135,7 +135,7 @@ where de.status=3", tableName);
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
-where de.status=3 
+where de.status=3 and a.fid is not null
 order by de.fdate");
                     DynamicObjectCollection OlaPustCol = DBUtils.ExecuteDynamicObject(ctx, strSql);
                     List<ConvertOption> OlaData = new List<ConvertOption>();
