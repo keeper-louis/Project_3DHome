@@ -129,7 +129,7 @@ namespace KEEPER.K3.APP
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
 from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
-where de.status=3", tableName);
+where de.status=3  and not exists ( select * from dubbleerro pr where pr.FMONUMBER=de.Salenumber and pr.FMOENTRYSEQ=de.Linenumber ) ", tableName);
                     DBUtils.Execute(ctx, strSqlAll);
                     string strSql = string.Format(@"/*dialect*/select distinct top 10 a.fid,de.fdate from detablein de 
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
@@ -161,12 +161,15 @@ order by de.fdate");
                             srcbillseq.Add(Convert.ToInt32(dc["FMOENTRYSEQ"]));
                             dic.Add(Convert.ToString(dc["FMONUMBER"]) + Convert.ToString(dc["FMOENTRYSEQ"]), Convert.ToInt32(dc["detInId"]));
                         }
-                        option.SourceBillEntryIds = sourceBillEntryIds;
-                        option.mount = mount;
-                        option.prtInId = prtIdList;
-                        option.dic = dic;
-                        option.srcbillseq = srcbillseq;
-                        OlaData.Add(option);
+                        if (dcl.Count() > 0)
+                        {
+                            option.SourceBillEntryIds = sourceBillEntryIds;
+                            option.mount = mount;
+                            option.prtInId = prtIdList;
+                            option.dic = dic;
+                            option.srcbillseq = srcbillseq;
+                            OlaData.Add(option);
+                        }
                     }
                     return OlaData;
                 }
