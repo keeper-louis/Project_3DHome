@@ -99,6 +99,57 @@ Convert.ToString(selectRows[i].DataRow["FSalenumber"]), Convert.ToString(selectR
                 }
 
             }
+            //lc add 查询状态为5的，未生成单据号，单据号为空 
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbstatusnobill", StringComparison.CurrentCultureIgnoreCase))
+            {
+                string strSql = string.Format(@"/*dialect*/   update detablein set status=0 where status=5 and fbillno=' '
+  and id in (
+  select detl.id  from detablein detl,
+  (select  c.FSRCBILLNO,a.FSRCBILLSEQ 
+  from T_SAL_OUTSTOCKENTRY a
+  inner join T_SAL_OUTSTOCK b on a.FID=b.fid
+  left join T_SAL_OUTSTOCKENTRY_R c on a.FENTRYID=c.FENTRYID
+  ) outbill where detl.status=5 and detl.fbillno=' ' and detl.Salenumber=outbill.FSRCBILLNO and detl.Linenumber=outbill.FSRCBILLSEQ
+  )
+
+");
+                DBUtils.Execute(this.Context, strSql);
+            }
+            // lc tbOutStatus5 这些已经生成出库单 状态设置为5 错误信息表也删掉；
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbOutStatus5", StringComparison.CurrentCultureIgnoreCase))
+            {
+                //先删除 出库错误信息表
+                string strSql = string.Format(@"/*dialect*/   
+ delete  from Deliverytable where DETABLEINID in 
+  (
+select     id from detablein din
+left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from  
+  T_SAL_OUTSTOCKENTRY a  
+  inner join T_SAL_OUTSTOCK b on a.FID=b.fid
+  left join T_SAL_OUTSTOCKENTRY_R c on a.FENTRYID=c.FENTRYID ) b
+  on din.Salenumber=b.FSRCBILLNO and din.Linenumber=b.FSRCBILLSEQ
+  where din.status=2 and din.ferrormsg='大于可出库数量' and b.FBILLNO is not     null
+
+  )
+
+
+
+");
+                DBUtils.Execute(this.Context, strSql);
+
+               strSql = string.Format(@"/*dialect*/     update detablein set status=5  where id in ( select din.id  from  detablein din
+left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from  
+  T_SAL_OUTSTOCKENTRY a  
+  inner join T_SAL_OUTSTOCK b on a.FID=b.fid
+  left join T_SAL_OUTSTOCKENTRY_R c on a.FENTRYID=c.FENTRYID ) b
+  on din.Salenumber=b.FSRCBILLNO and din.Linenumber=b.FSRCBILLSEQ
+  where din.status=2 and din.ferrormsg='大于可出库数量' and b.FBILLNO is not     null
+
+  )
+
+");
+                DBUtils.Execute(this.Context, strSql);
+            }
 
             this.View.Refresh();
         }

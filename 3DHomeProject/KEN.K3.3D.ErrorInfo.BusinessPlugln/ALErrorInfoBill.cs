@@ -106,7 +106,25 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 strSql = string.Format(@"/*dialect*/ Update altablein set status=0 where id in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
             }
-            
+            //tbnoBillStaus5  
+            //查询状态为5的，未生成单据号，单据号为空 
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbnoBillStaus5", StringComparison.CurrentCultureIgnoreCase))
+            {
+                
+                string strSql = string.Format(@"/*dialect*/ update altablein set status=0   
+     where   status=5   and fbillno=' '
+  and id not in (
+  select atl.id   from altablein atl 
+ left join  (
+  select spinentry.FSALENUMBER,spinentry.FLINENUMBER,spin.FBILLNO from T_SP_INSTOCK spin
+  inner join T_SP_INSTOCKentry spinentry on spin.FID= spinentry.fid
+  ) b on atl.salenumber=b.FSALENUMBER and atl.linenumber=b.FLINENUMBER
+
+  where   atl.status=5   and atl.fbillno=' ' and b.FBILLNO is not null
+  )
+");
+                DBUtils.Execute(this.Context, strSql);
+            }
             this.View.Refresh();
         }
         private Boolean checkData(String key)
