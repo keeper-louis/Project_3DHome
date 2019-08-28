@@ -106,18 +106,18 @@ or t_BD_Material.fnumber  like '06.99.0045%') and tso.FBILLNO=alt.Salenumber and
 
 
 
-            //删除重复扫码数据
-            //lc modify 20190813 与调拨一致
-           strSql = string.Format(@"/*dialect*/ delete Deliveryview from
-  (select alt.Salenumber,alt.Linenumber,alt.Amount,alt.scantime,min(alt.id)id,T_BD_MATERIAL_L.FNAME,t_BD_Material.fnumber
-  from T_SAL_ORDERENTRY  tsoe , T_SAL_ORDER tso,t_BD_Material t_BD_Material,T_BD_MATERIAL_L T_BD_MATERIAL_L,Deliveryview alt
-  where tsoe.fid=tso.fid and t_BD_Material.FMASTERID=T_BD_MATERIAL_L.FMATERIALID
-  and t_BD_Material.FMATERIALID=tsoe.FMATERIALID and t_BD_Material.fnumber  like '10.501%' and (LEN(t_BD_Material.fnumber ) - LEN(REPLACE(t_BD_Material.fnumber , '.', '  ')))<=-5 
-  and tso.FBILLNO=alt.Salenumber and  tsoe.FSEQ=alt.Linenumber 
- group by  alt.Salenumber,alt.Linenumber,alt.Amount,alt.scantime,T_BD_MATERIAL_L.FNAME,t_BD_Material.fnumber) a 
- where Deliveryview.Salenumber=a.Salenumber and Deliveryview.Linenumber=a.Linenumber
- and Deliveryview.scantime=a.scantime and Deliveryview.id<>a.id and  dbo.getField6Value(a.FNUMBER,'.')>=500 and  dbo.getField4Value(a.FNUMBER,'.')>0 and dbo.getField5Value(a.FNUMBER,'.')>0  ");
-            DBUtils.Execute(ctx, strSql);
+ //           //删除重复扫码数据
+ //           //lc modify 20190813 与调拨一致 20190821 与调拨一致 
+ //          strSql = string.Format(@"/*dialect*/ delete Deliveryview from
+ // (select alt.Salenumber,alt.Linenumber,alt.Amount,alt.scantime,min(alt.id)id,T_BD_MATERIAL_L.FNAME,t_BD_Material.fnumber
+ // from T_SAL_ORDERENTRY  tsoe , T_SAL_ORDER tso,t_BD_Material t_BD_Material,T_BD_MATERIAL_L T_BD_MATERIAL_L,Deliveryview alt
+ // where tsoe.fid=tso.fid and t_BD_Material.FMASTERID=T_BD_MATERIAL_L.FMATERIALID
+ // and t_BD_Material.FMATERIALID=tsoe.FMATERIALID and t_BD_Material.fnumber  like '10.501%' and (LEN(t_BD_Material.fnumber ) - LEN(REPLACE(t_BD_Material.fnumber , '.', '  ')))<=-5 
+ // and tso.FBILLNO=alt.Salenumber and  tsoe.FSEQ=alt.Linenumber 
+ //group by  alt.Salenumber,alt.Linenumber,alt.Amount,alt.scantime,T_BD_MATERIAL_L.FNAME,t_BD_Material.fnumber) a 
+ //where Deliveryview.Salenumber=a.Salenumber and Deliveryview.Linenumber=a.Linenumber
+ //and Deliveryview.scantime=a.scantime and Deliveryview.id<>a.id and  dbo.getField6Value(a.FNUMBER,'.')>=500 and  dbo.getField4Value(a.FNUMBER,'.')>0 and dbo.getField5Value(a.FNUMBER,'.')>0  ");
+ //           DBUtils.Execute(ctx, strSql);
             
 
 
