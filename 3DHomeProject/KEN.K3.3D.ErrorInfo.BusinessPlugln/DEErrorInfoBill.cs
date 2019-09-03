@@ -150,7 +150,15 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
 ");
                 DBUtils.Execute(this.Context, strSql);
             }
+            //挂起
+            // tbGQ
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbGQ", StringComparison.CurrentCultureIgnoreCase))
+            {
 
+                string filter = getSelectedRowsFErrorBillNo("fid");
+                string strSql = string.Format(@"/*dialect*/ update Deliverytable set FErrorBillNo='挂起' where fid in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+            }
             this.View.Refresh();
         }
         private Boolean checkData(String key)

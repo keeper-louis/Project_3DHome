@@ -125,7 +125,16 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
 ");
                 DBUtils.Execute(this.Context, strSql);
             }
-            this.View.Refresh();
+            //挂起
+            // tbGQ
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbGQ", StringComparison.CurrentCultureIgnoreCase))
+            {
+
+                string filter = getSelectedRowsFErrorBillNo("fid");
+                string strSql = string.Format(@"/*dialect*/ update Allocationtable set FErrorBillNo='挂起' where fid in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+            }
+                this.View.Refresh();
         }
         private Boolean checkData(String key)
         {
@@ -150,6 +159,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 }
             }
             return true;
+            
         }
         private string getSelectedRowsElements(String key)
         {
