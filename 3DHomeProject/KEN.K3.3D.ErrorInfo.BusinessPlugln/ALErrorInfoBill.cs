@@ -129,12 +129,35 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
             // tbGQ
             if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbGQ", StringComparison.CurrentCultureIgnoreCase))
             {
-
+                //获取选中行
+                ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
+                //检查选中行数
+                if (selectRows.Count() < 1)
+                {
+                    this.View.ShowErrMessage("请至少选中一条数据！");
+                    return ;
+                }
                 string filter = getSelectedRowsFErrorBillNo("fid");
                 string strSql = string.Format(@"/*dialect*/ update Allocationtable set FErrorBillNo='挂起' where fid in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
             }
-                this.View.Refresh();
+            //反挂起
+            // tbfGQ
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbfGQ", StringComparison.CurrentCultureIgnoreCase))
+            {
+                //获取选中行
+                ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
+                //检查选中行数
+                if (selectRows.Count() < 1)
+                {
+                    this.View.ShowErrMessage("请至少选中一条数据！");
+                    return;
+                }
+                string filter = getSelectedRowsFErrorBillNo("fid");
+                string strSql = string.Format(@"/*dialect*/ update Allocationtable set FErrorBillNo=null where fid in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+            }
+            this.View.Refresh();
         }
         private Boolean checkData(String key)
         {

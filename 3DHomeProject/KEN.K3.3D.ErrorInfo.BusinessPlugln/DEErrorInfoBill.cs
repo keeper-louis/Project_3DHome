@@ -155,10 +155,35 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
             if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbGQ", StringComparison.CurrentCultureIgnoreCase))
             {
 
+                //获取选中行
+                ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
+                //检查选中行数
+                if (selectRows.Count() < 1)
+                {
+                    this.View.ShowErrMessage("请至少选中一条数据！");
+                    return;
+                }
                 string filter = getSelectedRowsFErrorBillNo("fid");
                 string strSql = string.Format(@"/*dialect*/ update Deliverytable set FErrorBillNo='挂起' where fid in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
             }
+            // tbGQ 反挂起
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbGQ", StringComparison.CurrentCultureIgnoreCase))
+            {
+
+                //获取选中行
+                ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
+                //检查选中行数
+                if (selectRows.Count() < 1)
+                {
+                    this.View.ShowErrMessage("请至少选中一条数据！");
+                    return;
+                }
+                string filter = getSelectedRowsFErrorBillNo("fid");
+                string strSql = string.Format(@"/*dialect*/ update Deliverytable set FErrorBillNo=null where fid in ({0})", filter);
+                DBUtils.Execute(this.Context, strSql);
+            }
+
             this.View.Refresh();
         }
         private Boolean checkData(String key)
