@@ -180,10 +180,50 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
                     return;
                 }
                 string filter = getSelectedRowsFErrorBillNo("fid");
-                string strSql = string.Format(@"/*dialect*/ update Deliverytable set FErrorBillNo=null where fid in ({0})", filter);
+                string strSql = string.Format(@"/*dialect*/ update Deliverytable set FErrorBillNo=' ' where fid in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
             }
+            //清除按钮：采购件无对应仓库、物料未维护生产车间、无对应销售订单，A,B,C 表清楚掉；问题错误表对应删掉
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbDELCQRK", StringComparison.CurrentCultureIgnoreCase))
+            {
+                //删除 出库错误信息表数据
 
+                string strSql = string.Format(@"/*dialect*/  select * from Deliverytable a where a.FBILLNO in  (
+    select   id from detablein where ferrormsg in('采购件无对应仓库','无对应销售订单','物料未维护生产车间')   and status=2  ");
+                DBUtils.Execute(this.Context, strSql);
+                // 删除 出库 B表
+                string strSql2 = string.Format(@"/*dialect*/ 	delete detable from  						
+							detablein c where c.Salenumber=detable.Salenumber and c.Linenumber=detable.Linenumber and  c.ferrormsg in('物料未维护生产车间','无对应销售订单')  and c.status=2
+ ");
+
+                DBUtils.Execute(this.Context, strSql2);
+
+                // 删除 出库 C表
+                string strSql3 = string.Format(@"/*dialect*/  delete from  detablein where ferrormsg in('采购件无对应仓库','无对应销售订单','物料未维护生产车间')   and status=2  ");
+
+                DBUtils.Execute(this.Context, strSql3);
+
+
+            }
+
+            //重置按钮：无对应销售订单：81700101-00504-0    出库C表状态为1     无出库单生成
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbStatus1", StringComparison.CurrentCultureIgnoreCase))
+            {
+                //重置 为0 将不是处理中的数据，处理日期不是当天的代表进程已经卡死了
+
+                string strSql = string.Format(@"/*dialect*/  update detablein set status=0 where status =1 and Fsubdate+1<getdate() and fbillno=' ' 
+ ");
+                DBUtils.Execute(this.Context, strSql);
+                // 重置 未生成出库单 如果生成请先删除掉
+                string strSql2 = string.Format(@"/*dialect*/     update detablein set status=0  where status =1 and Fsubdate+1<getdate() 
+ and fbillno not in (
+   select fbillno from T_SAL_OUTSTOCK  
+ ) and fbillno like 'XSCK%'
+");
+
+                DBUtils.Execute(this.Context, strSql2);
+
+            }
             this.View.Refresh();
         }
         private Boolean checkData(String key)

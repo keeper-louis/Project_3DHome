@@ -65,8 +65,16 @@ ferrormsg = '更新库存出现异常情况，更新库存不成功！', FErrorS
 where fcloudheadid = {0}", id);
                         DBUtils.Execute(ctx, dropSql);
 
+                        // C表状态为2，查不到报错信息。
+                        string insertql = string.Format(@"/*dialect*/  insert into Deliverytable
+ select id FBILLNO,'A' FDOCUMENTSTATUS, detablein.salenumber SALENUMBER, detablein.linenumber LINENUMBER, id PRTABLEINID,
+'更新库存出现异常情况，更新库存不成功！' REASON,fdate FDATE, getdate() FSUBDATE,'' from detablein    
+   where fcloudheadid = {0}", id);
+                        DBUtils.Execute(ctx, insertql);
+
+
+                    }
                 }
-            }
 
 
 

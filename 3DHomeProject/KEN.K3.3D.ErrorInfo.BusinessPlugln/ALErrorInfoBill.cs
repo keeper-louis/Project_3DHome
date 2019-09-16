@@ -154,9 +154,80 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                     return;
                 }
                 string filter = getSelectedRowsFErrorBillNo("fid");
-                string strSql = string.Format(@"/*dialect*/ update Allocationtable set FErrorBillNo=null where fid in ({0})", filter);
+                string strSql = string.Format(@"/*dialect*/ update Allocationtable set FErrorBillNo=' ' where fid in ({0})", filter);
                 DBUtils.Execute(this.Context, strSql);
             }
+            //
+
+            //清除按钮：采购件无对应仓库、物料未维护生产车间、无对应销售订单，A,B,C 表清楚掉；问题错误表对应删掉
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbDELCQRK", StringComparison.CurrentCultureIgnoreCase))
+            {
+                //删除 调拨错误信息表数据
+
+                string strSql = string.Format(@"/*dialect*/ delete   Allocationtable   where  FBILLNO in ( 
+ select  id from altablein where ferrormsg in ('采购件无对应仓库','无对应销售订单','物料未维护生产车间')    and fbillno=' ' and status=2
+  ");
+                DBUtils.Execute(this.Context, strSql);
+                // 删除 调拨 B表
+                string strSql2 = string.Format(@"/*dialect*/ delete altable from altablein c where c.Salenumber=altable.Salenumber and c.Linenumber=altable.Linenumber and  c.ferrormsg in ('采购件无对应仓库','无对应销售订单','物料未维护生产车间')  and c.fbillno=' ' and c.status=2 ");
+
+                DBUtils.Execute(this.Context, strSql2);
+
+                // 删除 调拨 C表
+                string strSql3 = string.Format(@"/*dialect*/ delete from altablein where ferrormsg in ('采购件无对应仓库','无对应销售订单','物料未维护生产车间') and fbillno=' ' and status=2 ");
+
+                DBUtils.Execute(this.Context, strSql3);
+
+
+            }
+
+            //重置按钮：调拨C表中的状态为1，只生成简单生产入库单状态为审核中 调整设置为 0
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbStatus1", StringComparison.CurrentCultureIgnoreCase))
+            {
+                //重置 为0 将不是处理中的数据，处理日期不是当天的代表进程已经卡死了
+
+                string strSql = string.Format(@"/*dialect*/ update   altablein set status=0 where status=1 and Fsubdate+1<getdate() and
+   fbillno = ' '  
+ ");
+                DBUtils.Execute(this.Context, strSql);
+                // 重置 未生成简单生产入库 如果生成请先删除掉
+                string strSql2 = string.Format(@"/*dialect*/    update altablein  set status=0  where status=1 and Fsubdate+1<getdate() and
+   fbillno  not in (
+     select  fbillno from T_SP_INSTOCK
+   )  and fbillno like 'JDSC%'
+");
+
+                DBUtils.Execute(this.Context, strSql2);
+
+                // 重置 未生成直接调拨单 如果生成请先删除掉
+                string strSql3 = string.Format(@"/*dialect*/     update altablein  set status=0   where status=1 and Fsubdate+1<getdate() and
+   fbillno  not in (
+     select  fbillno from T_STK_STKTRANSFERIN  
+   )  and fbillno like 'ZJDB%'
+ ");
+
+                DBUtils.Execute(this.Context, strSql3);
+
+
+            }
+            // tbgz 45 问题45 ，销售订单单号为：8885449，第3行，异常列表无报错，调拨单未生成，入库C表中报采购件无对应仓库的错（8885792第2行）
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbgz", StringComparison.CurrentCultureIgnoreCase))
+            {
+                //删除 错误信息表对应的数据
+
+                string strSql = string.Format(@"/*dialect*/  delete from Allocationtable where fbillno in (
+ select id from altablein where status=2  and fbillno=' '  and ferrormsg  like '%关账%'
+ )
+");
+                DBUtils.Execute(this.Context, strSql);
+                // 重置 状态 为 0
+                string strSql2 = string.Format(@"/*dialect*/    update altablein set status=0  where status=2  and fbillno=' '  and ferrormsg  like '%关账%'
+");
+
+                DBUtils.Execute(this.Context, strSql2);
+
+            }
+           
             this.View.Refresh();
         }
         private Boolean checkData(String key)

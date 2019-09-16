@@ -214,6 +214,28 @@ and pr.status=0
             strSql = string.Format(@"/*dialect*/update altablein set status=2, ferrormsg='采购件无对应仓库' where  altablein.status=0 
 and altablein.PurStockId ='' and altablein.isPur=1 and altablein.Warehouseout<>'7.01' ");
             DBUtils.Execute(ctx, strSql);
+            //调拨出库判断大于 销售订单数量 大于可调拨数量 写入错误信息表 lcdoit add 20190616
+            strSql = string.Format(@"/*dialect*/insert into Allocationtable
+select id FBILLNO,'A' FDOCUMENTSTATUS, altablein.salenumber SALENUMBER,altablein.linenumber LINENUMBER,packcode Packcode,id PRTABLEINID,
+'大于可调拨数量' REASON,fdate FDATE,getdate() FSUBDATE,'' from altablein ,
+ (select a.Salenumber,a.Linenumber
+ from (select Salenumber,Linenumber,sum(Amount) amount from altablein where status=0 group by  Salenumber,Linenumber) a,
+  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FCANOUTQTY amount
+ from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
+where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
+) c
+ where altablein.Salenumber=c.Salenumber and altablein.Linenumber=c.Linenumber  and altablein.status=0 ");
+            DBUtils.Execute(ctx, strSql);
+            //把调拨数量大于销售订单中可出库数量的数据 status标识为2 lcdoit add 20190616
+            strSql = string.Format(@"/*dialect*/ update altablein set status=2 ,ferrormsg='大于可调拨数量' from
+ (select a.Salenumber,a.Linenumber
+ from (select Salenumber,Linenumber,sum(Amount) amount from altablein where status=0 group by  Salenumber,Linenumber) a,
+  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FCANOUTQTY amount
+ from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
+where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
+) c
+ where altablein.Salenumber=c.Salenumber and altablein.Linenumber=c.Linenumber  and altablein.status=0 ");
+            DBUtils.Execute(ctx, strSql);
 
             //标识为 3 预检完成准备入库状态
             strSql = string.Format(@"/*dialect*/ update altablein set status=3 where  status=0  ");
