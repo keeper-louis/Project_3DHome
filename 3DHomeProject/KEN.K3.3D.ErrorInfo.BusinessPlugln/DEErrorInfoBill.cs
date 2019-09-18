@@ -102,8 +102,8 @@ Convert.ToString(selectRows[i].DataRow["FSalenumber"]), Convert.ToString(selectR
             //lc add 查询状态为5的，未生成单据号，单据号为空 
             if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbstatusnobill", StringComparison.CurrentCultureIgnoreCase))
             {
-                string strSql = string.Format(@"/*dialect*/   update detablein set status=0 where status=5 and fbillno=' '
-  and id in (
+                string strSql = string.Format(@"/*dialect*/   update detablein set status=0 where status=5 and ( fbillno=' ' or fbillno='0' )
+  and not id in (
   select detl.id  from detablein detl,
   (select  c.FSRCBILLNO,a.FSRCBILLSEQ 
   from T_SAL_OUTSTOCKENTRY a
