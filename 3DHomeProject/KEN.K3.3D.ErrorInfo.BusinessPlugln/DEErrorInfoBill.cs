@@ -188,8 +188,8 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
             {
                 //删除 出库错误信息表数据
 
-                string strSql = string.Format(@"/*dialect*/  select * from Deliverytable a where a.FBILLNO in  (
-    select   id from detablein where ferrormsg in('采购件无对应仓库','无对应销售订单','物料未维护生产车间')   and status=2  ");
+                string strSql = string.Format(@"/*dialect*/  delete Deliverytable a where a.FBILLNO in  (
+    select   id from detablein where ferrormsg in('采购件无对应仓库','无对应销售订单','物料未维护生产车间')   and status=2  ) ");
                 DBUtils.Execute(this.Context, strSql);
                 // 删除 出库 B表
                 string strSql2 = string.Format(@"/*dialect*/ 	delete detable from  						
@@ -211,7 +211,7 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
             {
                 //重置 为0 将不是处理中的数据，处理日期不是当天的代表进程已经卡死了
 
-                string strSql = string.Format(@"/*dialect*/  update detablein set status=0 where status =1 and Fsubdate+1<getdate() and fbillno=' ' 
+                string strSql = string.Format(@"/*dialect*/  update detablein set status=0 where status =1 and Fsubdate+1<getdate() and  ( fbillno=' ' or fbillno='0' )
  ");
                 DBUtils.Execute(this.Context, strSql);
                 // 重置 未生成出库单 如果生成请先删除掉

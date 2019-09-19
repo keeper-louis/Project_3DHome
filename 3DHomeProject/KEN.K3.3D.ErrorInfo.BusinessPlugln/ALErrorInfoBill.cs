@@ -165,7 +165,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 //删除 调拨错误信息表数据
 
                 string strSql = string.Format(@"/*dialect*/ delete   Allocationtable   where  FBILLNO in ( 
- select  id from altablein where ferrormsg in ('采购件无对应仓库','无对应销售订单','物料未维护生产车间')    and fbillno=' ' and status=2
+ select  id from altablein where ferrormsg in ('采购件无对应仓库','无对应销售订单','物料未维护生产车间')    and fbillno=' ' and status=2 )
   ");
                 DBUtils.Execute(this.Context, strSql);
                 // 删除 调拨 B表
