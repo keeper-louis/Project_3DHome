@@ -243,12 +243,12 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 }
                 // 删除 调拨 B 表
                 string filter = getSelectedRowsElements("FBILLNO");
-                string strSql2 = string.Format(@"/*dialect*/ delete altable from altablein c where c.Salenumber=altable.Salenumber and c.Linenumber=altable.Linenumber and  c.ferrormsg in ('大于可调拨数量')   and c.status=2  and c.id in {0} ", filter);
+                string strSql2 = string.Format(@"/*dialect*/ delete altable from altablein c where c.Salenumber=altable.Salenumber and c.Linenumber=altable.Linenumber and  c.ferrormsg in ('大于可调拨数量')   and c.status=2  and c.id in ({0}) ", filter);
 
                 DBUtils.Execute(this.Context, strSql2);
 
                 // 删除 调拨 C表
-                string strSql3 = string.Format(@"/*dialect*/ delete   from altablein c where  c.ferrormsg in ('大于可调拨数量')   and c.status=2  and c.id in {0} ", filter );
+                string strSql3 = string.Format(@"/*dialect*/ delete   from altablein c where  c.ferrormsg in ('大于可调拨数量')   and c.status=2  and c.id in ({0}) ", filter );
 
                 DBUtils.Execute(this.Context, strSql3);
 
