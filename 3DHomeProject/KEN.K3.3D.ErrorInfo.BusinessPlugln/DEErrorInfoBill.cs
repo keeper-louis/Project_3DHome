@@ -168,7 +168,7 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
                 DBUtils.Execute(this.Context, strSql);
             }
             // tbGQ 反挂起
-            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbGQ", StringComparison.CurrentCultureIgnoreCase))
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbfGQ", StringComparison.CurrentCultureIgnoreCase))
             {
 
                 //获取选中行
