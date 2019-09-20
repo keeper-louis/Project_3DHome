@@ -227,7 +227,40 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 DBUtils.Execute(this.Context, strSql2);
 
             }
-           
+            //大于可调拨数量 重新抽取  tbdykdb
+
+            //清除按钮：大于可调拨数量，重新抽取
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "tbdykdb", StringComparison.CurrentCultureIgnoreCase))
+            {
+
+                //获取选中行
+                ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
+                //检查选中行数
+                if (selectRows.Count() < 1)
+                {
+                    this.View.ShowErrMessage("请至少选中一条数据！");
+                    return;
+                }
+                // 删除 调拨 B 表
+                string filter = getSelectedRowsElements("FBILLNO");
+                string strSql2 = string.Format(@"/*dialect*/ delete altable from altablein c where c.Salenumber=altable.Salenumber and c.Linenumber=altable.Linenumber and  c.ferrormsg in ('大于可调拨数量')   and c.status=2  and c.id in {0} ", filter);
+
+                DBUtils.Execute(this.Context, strSql2);
+
+                // 删除 调拨 C表
+                string strSql3 = string.Format(@"/*dialect*/ delete   from altablein c where  c.ferrormsg in ('大于可调拨数量')   and c.status=2  and c.id in {0} ", filter );
+
+                DBUtils.Execute(this.Context, strSql3);
+
+
+                //删除 调拨错误信息表数据
+                filter = getSelectedRowsFErrorBillNo("fid");
+                string strSql = string.Format(@"/*dialect*/  select  * from Allocationtable where REASON  in ('大于可调拨数量')     where fid in ({0}) ", filter);
+                DBUtils.Execute(this.Context, strSql);
+
+
+            }
+
             this.View.Refresh();
         }
         private Boolean checkData(String key)
