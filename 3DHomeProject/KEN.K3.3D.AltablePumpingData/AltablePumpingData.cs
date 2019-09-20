@@ -220,7 +220,7 @@ select id FBILLNO,'A' FDOCUMENTSTATUS, altablein.salenumber SALENUMBER,altablein
 '大于可调拨数量' REASON,fdate FDATE,getdate() FSUBDATE,'' from altablein ,
  (select a.Salenumber,a.Linenumber
  from (select Salenumber,Linenumber,sum(Amount) amount from altablein where status=0 group by  Salenumber,Linenumber) a,
-  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FCANOUTQTY amount
+  (select  tso.fbillno salenumber,tsoe.fseq linenumber, fqty amount
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
 ) c
@@ -230,7 +230,7 @@ where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b
             strSql = string.Format(@"/*dialect*/ update altablein set status=2 ,ferrormsg='大于可调拨数量' from
  (select a.Salenumber,a.Linenumber
  from (select Salenumber,Linenumber,sum(Amount) amount from altablein where status=0 group by  Salenumber,Linenumber) a,
-  (select  tso.fbillno salenumber,tsoe.fseq linenumber,FCANOUTQTY amount
+  (select  tso.fbillno salenumber,tsoe.fseq linenumber,fqty amount
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
 ) c
