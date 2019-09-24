@@ -248,7 +248,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 DBUtils.Execute(this.Context, strSql2);
 
                 // 删除 调拨 C表
-                string strSql3 = string.Format(@"/*dialect*/ delete   from altablein  where   ferrormsg in ('大于可调拨数量')   and  status=2  and id in ({0}) ", filter );
+                string strSql3 = string.Format(@"/*dialect*/ delete   altablein  where   ferrormsg in ('大于可调拨数量')   and  status=2  and id in ({0}) ", filter );
 
                 DBUtils.Execute(this.Context, strSql3);
 
