@@ -75,6 +75,25 @@ or t_BD_Material.fnumber  like '06.99.0045%') and tso.FBILLNO=alt.Salenumber and
  and Allocationview.Packcode<>a.Packcode  ");
             DBUtils.Execute(ctx, strSql);
 
+//            //滑动门 继续去重复扫码 lc add 20190924
+//            strSql = string.Format(@"/*dialect*/delete Allocationview from
+//  (select alt.Salenumber,alt.Linenumber,alt.Amount,alt.Packcode ,min(alt.scantime) scantime ,T_BD_MATERIAL_L.FNAME
+//  from T_SAL_ORDERENTRY  tsoe , T_SAL_ORDER tso,t_BD_Material t_BD_Material,T_BD_MATERIAL_L T_BD_MATERIAL_L,Allocationview alt
+//   where tsoe.fid=tso.fid and t_BD_Material.FMASTERID=T_BD_MATERIAL_L.FMATERIALID
+//  and t_BD_Material.FMATERIALID=tsoe.FMATERIALID and (t_BD_Material.fnumber  like '10.401%' or t_BD_Material.fnumber  like '10.402%' 
+//or t_BD_Material.fnumber  like '10.403%' or t_BD_Material.fnumber  like '10.404%'  
+//or t_BD_Material.fnumber  like '10.405%'
+//or t_BD_Material.fnumber  like '10.406%' or t_BD_Material.fnumber  like '10.407%' 
+//or t_BD_Material.fnumber  like '10.408%' or t_BD_Material.fnumber  like '10.409%'  
+//or t_BD_Material.fnumber  like '10.410%' or t_BD_Material.fnumber  like '10.411%' 
+//or t_BD_Material.fnumber  like '10.412%' 
+//or t_BD_Material.fnumber  like '10.413%' 
+//) and tso.FBILLNO=alt.Salenumber and  tsoe.FSEQ=alt.Linenumber 
+// group by  alt.Salenumber,alt.Linenumber,alt.Amount,alt.Packcode,T_BD_MATERIAL_L.FNAME) a 
+// where Allocationview.Salenumber=a.Salenumber and Allocationview.Linenumber=a.Linenumber
+// and Allocationview.Packcode=a.Packcode and  Allocationview.scantime<>a.scantime  ");
+//            DBUtils.Execute(ctx, strSql);
+
             //删除重复扫码数据
             strSql = string.Format(@"/*dialect*/delete Allocationview from
   (select alt.Salenumber,alt.Linenumber,alt.Amount,min(alt.Packcode) packcode,T_BD_MATERIAL_L.FNAME,t_BD_Material.fnumber
@@ -99,6 +118,34 @@ v.packcode=pr.packcode and v.scantime=pr.scantime) group by salenumber,linenumbe
 select Salenumber,Linenumber,Packcode,min(Scantime) Scantime from altable group by Salenumber,Linenumber,Packcode) a
  where altable.Salenumber=a.Salenumber and altable.Linenumber=a.Linenumber and altable.Packcode=a.Packcode and altable.Scantime<>a.Scantime and status=0 ";
             DBUtils.Execute(ctx, strSql);
+
+            //滑动门 去重复 20190924 按包装码相同，同一订单，
+
+            strSql = @"/*dialect*/ 
+update altable set status=2 
+ from  
+  (
+  select alt.Salenumber,alt.Linenumber,1 amont, min(alt.scantime) scantime ,T_BD_MATERIAL_L.FNAME
+  from T_SAL_ORDERENTRY  tsoe , T_SAL_ORDER tso,t_BD_Material t_BD_Material,T_BD_MATERIAL_L T_BD_MATERIAL_L,altable alt
+   where tsoe.fid=tso.fid and t_BD_Material.FMASTERID=T_BD_MATERIAL_L.FMATERIALID
+  and t_BD_Material.FMATERIALID=tsoe.FMATERIALID and (t_BD_Material.fnumber  like '10.401%' or t_BD_Material.fnumber  like '10.402%' 
+or t_BD_Material.fnumber  like '10.403%' or t_BD_Material.fnumber  like '10.404%'  
+or t_BD_Material.fnumber  like '10.405%'
+or t_BD_Material.fnumber  like '10.406%' or t_BD_Material.fnumber  like '10.407%' 
+or t_BD_Material.fnumber  like '10.408%' or t_BD_Material.fnumber  like '10.409%'  
+or t_BD_Material.fnumber  like '10.410%' or t_BD_Material.fnumber  like '10.411%' 
+or t_BD_Material.fnumber  like '10.412%' 
+or t_BD_Material.fnumber  like '10.413%' 
+) and tso.FBILLNO=alt.Salenumber and  tsoe.FSEQ=alt.Linenumber 
+and alt.status=0  
+ group by  alt.Salenumber,alt.Linenumber,T_BD_MATERIAL_L.FNAME
+ 
+ ) a 
+ where altable.Salenumber=a.Salenumber and altable.Linenumber=a.Linenumber
+   and altable.scantime<>a.scantime and altable.status=0
+  ";
+            DBUtils.Execute(ctx, strSql);
+
 
             //把接口数据表中status为0的数据（未插入到待录入表的数据状态） sum数量 插入到 待录入表临时表Altabletemp
             strSql = @"/*dialect*/insert into altablein select Salenumber,Linenumber,Packcode,Amount,Warehouseout,Warehousein,[Procedure],status,Scantime,fdate,Fsubdate,0,'','','','',0,'' from altable where status=0";
@@ -219,7 +266,7 @@ and altablein.PurStockId ='' and altablein.isPur=1 and altablein.Warehouseout<>'
 select id FBILLNO,'A' FDOCUMENTSTATUS, altablein.salenumber SALENUMBER,altablein.linenumber LINENUMBER,packcode Packcode,id PRTABLEINID,
 '大于可调拨数量' REASON,fdate FDATE,getdate() FSUBDATE,'' from altablein ,
  (select a.Salenumber,a.Linenumber
- from (select Salenumber,Linenumber,sum(Amount) amount from altablein where status=0 group by  Salenumber,Linenumber) a,
+ from (select Salenumber,Linenumber,sum(Amount) amount from altablein where fbillno<>' ' group by  Salenumber,Linenumber) a,
   (select  tso.fbillno salenumber,tsoe.fseq linenumber, fqty amount
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
@@ -229,7 +276,7 @@ where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b
             //把调拨数量大于销售订单中可出库数量的数据 status标识为2 lcdoit add 20190616
             strSql = string.Format(@"/*dialect*/ update altablein set status=2 ,ferrormsg='大于可调拨数量' from
  (select a.Salenumber,a.Linenumber
- from (select Salenumber,Linenumber,sum(Amount) amount from altablein where status=0 group by  Salenumber,Linenumber) a,
+ from (select Salenumber,Linenumber,sum(Amount) amount from altablein where fbillno<>' ' group by  Salenumber,Linenumber) a,
   (select  tso.fbillno salenumber,tsoe.fseq linenumber,fqty amount
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
