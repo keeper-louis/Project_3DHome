@@ -219,7 +219,7 @@ and altablein.PurStockId ='' and altablein.isPur=1 and altablein.Warehouseout<>'
 select id FBILLNO,'A' FDOCUMENTSTATUS, altablein.salenumber SALENUMBER,altablein.linenumber LINENUMBER,packcode Packcode,id PRTABLEINID,
 '大于可调拨数量' REASON,fdate FDATE,getdate() FSUBDATE,'' from altablein ,
  (select a.Salenumber,a.Linenumber
- from (select Salenumber,Linenumber,sum(Amount) amount from altablein where status=0 group by  Salenumber,Linenumber) a,
+ from (select Salenumber,Linenumber,sum(Amount) amount from altablein where fbillno<>' ' group by  Salenumber,Linenumber) a,
   (select  tso.fbillno salenumber,tsoe.fseq linenumber, fqty amount
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
@@ -229,7 +229,7 @@ where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b
             //把调拨数量大于销售订单中可出库数量的数据 status标识为2 lcdoit add 20190616
             strSql = string.Format(@"/*dialect*/ update altablein set status=2 ,ferrormsg='大于可调拨数量' from
  (select a.Salenumber,a.Linenumber
- from (select Salenumber,Linenumber,sum(Amount) amount from altablein where status=0 group by  Salenumber,Linenumber) a,
+ from (select Salenumber,Linenumber,sum(Amount) amount from altablein where fbillno<>' ' group by  Salenumber,Linenumber) a,
   (select  tso.fbillno salenumber,tsoe.fseq linenumber,fqty amount
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
