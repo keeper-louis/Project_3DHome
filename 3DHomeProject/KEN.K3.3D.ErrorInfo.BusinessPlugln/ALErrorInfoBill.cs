@@ -255,7 +255,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
 
                 //删除 调拨错误信息表数据
                 filter = getSelectedRowsFErrorBillNo("fid");
-                string strSql = string.Format(@"/*dialect*/  delete from Allocationtable where REASON  in ('大于可调拨数量')     where fid in ({0}) ", filter);
+                string strSql = string.Format(@"/*dialect*/  delete from Allocationtable where REASON  in ('大于可调拨数量')     and  fid in ({0}) ", filter);
                 DBUtils.Execute(this.Context, strSql);
 
 
