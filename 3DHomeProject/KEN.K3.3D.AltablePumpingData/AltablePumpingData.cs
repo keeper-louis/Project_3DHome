@@ -271,7 +271,7 @@ select id FBILLNO,'A' FDOCUMENTSTATUS, altablein.salenumber SALENUMBER,altablein
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
 ) c
- where altablein.Salenumber=c.Salenumber and altablein.Linenumber=c.Linenumber   ");
+ where altablein.Salenumber=c.Salenumber and altablein.Linenumber=c.Linenumber  and  altablein.status=0 ");
             DBUtils.Execute(ctx, strSql);
             //把调拨数量大于销售订单中可出库数量的数据 status标识为2 lcdoit add 20190616
             strSql = string.Format(@"/*dialect*/ update altablein set status=2 ,ferrormsg='大于可调拨数量' from
@@ -281,7 +281,7 @@ where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b
  from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe,T_SAL_ORDERENTRY_R tsop 
 where tso.fid=tsoe.fid and tsoe.FENTRYID=tsop.FENTRYID  ) b where a.Salenumber=b.salenumber and a.Linenumber=b.linenumber and a.amount>b.amount
 ) c
- where altablein.Salenumber=c.Salenumber and altablein.Linenumber=c.Linenumber   ");
+ where altablein.Salenumber=c.Salenumber and altablein.Linenumber=c.Linenumber  and  altablein.status=0 ");
             DBUtils.Execute(ctx, strSql);
 
             //标识为 3 预检完成准备入库状态

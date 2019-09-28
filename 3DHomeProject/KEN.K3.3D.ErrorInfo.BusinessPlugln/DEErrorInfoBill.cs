@@ -188,7 +188,7 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
             {
                 //删除 出库错误信息表数据
 
-                string strSql = string.Format(@"/*dialect*/  delete Deliverytable a where a.FBILLNO in  (
+                string strSql = string.Format(@"/*dialect*/  delete Deliverytable   where  FBILLNO in  (
     select   id from detablein where ferrormsg in('采购件无对应仓库','无对应销售订单','物料未维护生产车间')   and status=2  ) ");
                 DBUtils.Execute(this.Context, strSql);
                 // 删除 出库 B表
