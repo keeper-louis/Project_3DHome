@@ -186,12 +186,12 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
             {
                 //重置 为0 将不是处理中的数据，处理日期不是当天的代表进程已经卡死了
 
-                string strSql = string.Format(@"/*dialect*/ update   altablein set status=0 where status=1 and Fsubdate+1<getdate() and
-   fbillno = ' '  
+                string strSql = string.Format(@"/*dialect*/ update   altablein set status=0 where status=1 and Fsubdate+0.5<getdate() 
+   and    fbillno = ' '     
  ");
                 DBUtils.Execute(this.Context, strSql);
                 // 重置 未生成简单生产入库 如果生成请先删除掉
-                string strSql2 = string.Format(@"/*dialect*/    update altablein  set status=0  where status=1 and Fsubdate+1<getdate() and
+                string strSql2 = string.Format(@"/*dialect*/    update altablein  set status=0  where status=1 and Fsubdate+0.5<getdate() and
    fbillno  not in (
      select  fbillno from T_SP_INSTOCK
    )  and fbillno like 'JDSC%'
@@ -200,7 +200,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 DBUtils.Execute(this.Context, strSql2);
 
                 // 重置 未生成直接调拨单 如果生成请先删除掉
-                string strSql3 = string.Format(@"/*dialect*/     update altablein  set status=0   where status=1 and Fsubdate+1<getdate() and
+                string strSql3 = string.Format(@"/*dialect*/     update altablein  set status=0   where status=1 and Fsubdate+0.5<getdate() and
    fbillno  not in (
      select  fbillno from T_STK_STKTRANSFERIN  
    )  and fbillno like 'ZJDB%'
