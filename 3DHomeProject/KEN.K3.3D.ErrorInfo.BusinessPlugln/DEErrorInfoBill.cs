@@ -211,11 +211,11 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
             {
                 //重置 为0 将不是处理中的数据，处理日期不是当天的代表进程已经卡死了
 
-                string strSql = string.Format(@"/*dialect*/  update detablein set status=0 where status =1 and Fsubdate+1<getdate() and  ( fbillno=' ' or fbillno='0' )
+                string strSql = string.Format(@"/*dialect*/  update detablein set status=0 where status =1 and Fsubdate+0.5<getdate() and  ( fbillno=' ' or fbillno='0' )
  ");
                 DBUtils.Execute(this.Context, strSql);
                 // 重置 未生成出库单 如果生成请先删除掉
-                string strSql2 = string.Format(@"/*dialect*/     update detablein set status=0  where status =1 and Fsubdate+1<getdate() 
+                string strSql2 = string.Format(@"/*dialect*/     update detablein set status=0  where status =1 and Fsubdate+0.5<getdate() 
  and fbillno not in (
    select fbillno from T_SAL_OUTSTOCK  
  ) and fbillno like 'XSCK%'
