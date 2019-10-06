@@ -1275,6 +1275,10 @@ order by de.fdate");
        alt.Warehouseout,
 	   alt.Warehousein,
 	   t_BD_MaterialInvPty.FISENABLE
+      F_YJ_TEXT4,
+	   F_YJ_TEXT5,
+	   F_YJ_TEXT6,
+	   F_YJ_TEXT7
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -1305,7 +1309,12 @@ and alt.isPur=0
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
-                            salEntryDataList.Add(salEntryData);
+                        //简单生产入库、调拨单、销售出库要将预订单中的“型号、ABC取值''携带过来。
+                        salEntryData.PMSModel = Convert.ToString(purTransferData["F_YJ_TEXT4"]);
+                        salEntryData.descA = Convert.ToString(purTransferData["F_YJ_TEXT5"]);
+                        salEntryData.descB = Convert.ToString(purTransferData["F_YJ_TEXT6"]);
+                        salEntryData.descC = Convert.ToString(purTransferData["F_YJ_TEXT7"]);
+                        salEntryDataList.Add(salEntryData);
                         }
                         list.SalOrder2DirectTrans = salEntryDataList;
                         return list;
@@ -2618,6 +2627,10 @@ and alt.isPur=1
        alt.Warehouseout,
 	   alt.Warehousein,
 	   t_BD_MaterialInvPty.FISENABLE
+       F_YJ_TEXT4,
+	   F_YJ_TEXT5,
+	   F_YJ_TEXT6,
+	   F_YJ_TEXT7
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -2650,7 +2663,12 @@ where alt.fdate = '{0}'  and tbm.FWORKSHOPID={1} ", Convert.ToDateTime(dateData[
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
-                            salEntryDataList.Add(salEntryData);
+                        salEntryData.PMSModel= Convert.ToString(purTransferData["F_YJ_TEXT4"]);
+                        salEntryData.descA = Convert.ToString(purTransferData["F_YJ_TEXT5"]);
+                        salEntryData.descB = Convert.ToString(purTransferData["F_YJ_TEXT6"]);
+                        salEntryData.descC = Convert.ToString(purTransferData["F_YJ_TEXT7"]);
+                        //add 1、 简单生产入库、调拨单、销售出库要将预订单中的“型号、ABC取值''携带过来。
+                        salEntryDataList.Add(salEntryData);
                         }
                         list.SalOrder2DirectTrans = salEntryDataList;
                         return list;

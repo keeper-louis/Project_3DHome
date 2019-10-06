@@ -74,7 +74,25 @@ namespace KEEPER.K3._3D.Core.Entity
         /// 是否启用BOM版本管理
         /// </summary>
         public string FISENABLE { get; set; }
-        
 
+        /// <summary>
+        /// PMS型号
+        /// </summary>
+        public string PMSModel { get; set; }
+
+        /// <summary>
+        /// A 值
+        /// </summary>
+        public string descA { get; set; }
+
+        /// <summary>
+        /// B 值
+        /// </summary>
+        public string descB { get; set; }
+
+        /// <summary>
+        /// C 值
+        /// </summary>
+        public string descC { get; set; }
     }
 }

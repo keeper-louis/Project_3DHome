@@ -173,6 +173,15 @@ where    status=3  and tbm.FWORKSHOPID>0   and tbm.FWORKSHOPID>0    and isPur =0
                 {
                     dynamicFormView.SetItemValueByID("FLot", a[i].Lot, i);
                 }
+                // PMS 型号
+                dynamicFormView.UpdateValue("F_PAEZ_PMSMODEL", i, a[i].PMSModel);
+                // A 值
+                dynamicFormView.UpdateValue("F_PAEZ_DESCA", i, a[i].descA);
+                // B 值
+                dynamicFormView.UpdateValue("F_PAEZ_DESCB", i, a[i].descB);
+                // C 值
+                dynamicFormView.UpdateValue("F_PAEZ_DESCC", i, a[i].descC);
+
             }
 
 
