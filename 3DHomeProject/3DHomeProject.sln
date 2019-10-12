@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2002
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KEEPER.K3.APP", "KEEPER.K3.APP\KEEPER.K3.APP.csproj", "{62FCABAD-9972-4E9C-A1DC-1116D0595D82}"
 EndProject
@@ -42,6 +42,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KEN.K3.3D.Delivery.PUSH.ScheduleServicePlugIn", "KEN.K3.3D.Delivery.SAVE.ScheduleServicePlugIn\KEN.K3.3D.Delivery.PUSH.ScheduleServicePlugIn.csproj", "{0DDD3F7D-4E41-401E-B11C-3D656E5BDC2E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KEN.K3.3D.SalesOrder2SalesOutStock1.ServicePlugln", "KEN.K3.3D.SalesOrder2SalesOutStock1.ServicePlugln\KEN.K3.3D.SalesOrder2SalesOutStock1.ServicePlugln.csproj", "{628C6D2C-2C85-4D06-964B-0F91B1F08697}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LC.K3.3D.SaleOrderSaveOpr.ServicePlugIn", "LC.K3.3D.SaleOrderSaveOpr.ServicePlugIn\LC.K3.3D.SaleOrderSaveOpr.ServicePlugIn.csproj", "{9B9C13EA-46D7-4357-9C15-C5DD4C697824}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -105,6 +107,10 @@ Global
 		{628C6D2C-2C85-4D06-964B-0F91B1F08697}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{628C6D2C-2C85-4D06-964B-0F91B1F08697}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{628C6D2C-2C85-4D06-964B-0F91B1F08697}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B9C13EA-46D7-4357-9C15-C5DD4C697824}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B9C13EA-46D7-4357-9C15-C5DD4C697824}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B9C13EA-46D7-4357-9C15-C5DD4C697824}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B9C13EA-46D7-4357-9C15-C5DD4C697824}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -128,5 +134,9 @@ Global
 		{8D3F24F8-6B57-4C92-BE04-35E4B78B39D8} = {5772307B-65A9-48D2-BE7F-BB1AE9152B12}
 		{0DDD3F7D-4E41-401E-B11C-3D656E5BDC2E} = {5772307B-65A9-48D2-BE7F-BB1AE9152B12}
 		{628C6D2C-2C85-4D06-964B-0F91B1F08697} = {55995487-7168-4695-88FD-42D74AF017CB}
+		{9B9C13EA-46D7-4357-9C15-C5DD4C697824} = {55995487-7168-4695-88FD-42D74AF017CB}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {22FC0664-C102-49C9-AF56-A4B8175BD493}
 	EndGlobalSection
 EndGlobal
