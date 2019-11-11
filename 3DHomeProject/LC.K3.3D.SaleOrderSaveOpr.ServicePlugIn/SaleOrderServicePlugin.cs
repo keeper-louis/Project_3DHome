@@ -32,6 +32,8 @@ namespace LC.K3._3D.SaleOrderSaveOpr.ServicePlugIn
                     {
                         // 订单明细分录
                         DynamicObjectCollection SaleOrderEntry = item["SaleOrderEntry"] as DynamicObjectCollection;
+                        //业务类型
+                        item["BusinessType"] = "NORMAL";//普通销售
 
                         // 源单明细中有记录
                         if (SaleOrderEntry != null && SaleOrderEntry.Count() > 0)
