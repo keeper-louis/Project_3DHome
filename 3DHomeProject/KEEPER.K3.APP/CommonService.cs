@@ -127,13 +127,13 @@ namespace KEEPER.K3.APP
                     tableName = CreateTempTalbe(ctx, createSql);
                     string strSqlAll = string.Format(@"/*dialect*/insert into {0} select a.fid,a.FDETAILID,de.Amount,de.id,de.fdate,de.Salenumber,de.Linenumber from detablein de 
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
-from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID and  tso.FCLOSESTATUS='A' ) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
 where de.status=3  and not exists ( select * from dubbleerro pr where pr.FMONUMBER=de.Salenumber and pr.FMOENTRYSEQ=de.Linenumber ) ", tableName);
                     DBUtils.Execute(ctx, strSqlAll);
                     string strSql = string.Format(@"/*dialect*/select distinct top 10 a.fid,de.fdate from detablein de 
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
-from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID) a
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID and tso.FCLOSESTATUS='A'  ) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
 where de.status=3 and a.fid is not null
 order by de.fdate");
