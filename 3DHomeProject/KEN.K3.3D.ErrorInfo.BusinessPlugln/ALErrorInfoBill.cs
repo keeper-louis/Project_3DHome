@@ -226,6 +226,13 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
 
                 DBUtils.Execute(this.Context, strSql2);
 
+                //lc 201911/14 add 
+                string strSql3 = string.Format(@"/*dialect*/  delete     from Allocationtable where fbillno in (
+ select id from altablein where status in (2,5)  and fbillno<>' '  and ferrormsg  like '%关账%'
+ )
+");
+                DBUtils.Execute(this.Context, strSql3);
+
             }
             //大于可调拨数量 重新抽取  tbdykdb
 
