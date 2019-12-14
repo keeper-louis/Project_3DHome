@@ -65,7 +65,8 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 }
                 //删除对应错误信息表中的数据
                 string filter = getSelectedRowsFErrorBillNo("FErrorBillNo");
-                string strSql = string.Format(@"/*dialect*/ Delete Allocationtable where FErrorBillNo in ({0})", filter);
+                string filterid = getSelectedRowsFErrorBillNo("fid");//出库接口使用清除更新库存不成功报错的按钮时，大于可出库数量的报错也会随之被清除,
+                string strSql = string.Format(@"/*dialect*/ Delete Allocationtable where fid in ({0}) ", filterid);
                 DBUtils.Execute(this.Context, strSql);
                 //将接口待处理表对应数据状态置为5 3D业务人员手工审核成功
                 strSql = string.Format(@"/*dialect*/ Update altablein set status=5,ferrormsg='3D业务人员手工审核成功',fsubdate=GETDATE() where fbillno in ({0})  and status=2", filter);

@@ -65,7 +65,8 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 }
                 //删除对应错误信息表中的数据
                 string filter = getSelectedRowsFErrorBillNo("FErrorBillNo");
-                string strSql = string.Format(@"/*dialect*/ Delete Deliverytable where FErrorBillNo in ({0})", filter);
+                string filterid = getSelectedRowsFErrorBillNo("fid");
+                string strSql = string.Format(@"/*dialect*/ Delete Deliverytable  where fid in ({0}) ", filterid);
                 DBUtils.Execute(this.Context, strSql);
                 //将接口待处理表对应数据状态置为5 3D业务人员手工审核成功
                 strSql = string.Format(@"/*dialect*/ Update detablein set status=5,ferrormsg='3D业务人员手工审核成功',fsubdate=GETDATE() where fbillno in ({0}) and status=2 ", filter);
