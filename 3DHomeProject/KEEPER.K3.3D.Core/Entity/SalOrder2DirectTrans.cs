@@ -59,7 +59,7 @@ namespace KEEPER.K3._3D.Core.Entity
             /// <summary>
             /// 数量
             /// </summary>
-            public int amount { get; set; }
+            public decimal amount { get; set; }
 
             /// <summary>
             /// 出库仓库编码

@@ -103,7 +103,7 @@ namespace KEEPER.K3.APP
                         sourceBillIds.Add(Convert.ToInt64(item["FID"]));
                         option.SourceBillIds = sourceBillIds;
                         List<long> sourceBillEntryIds = new List<long>();
-                        List<int> mount = new List<int>();
+                        List<decimal> mount = new List<decimal>(); //lc 更改成小数
                         List<long> prtIdList = new List<long>();
                         Dictionary<string, int> dic = new Dictionary<string, int>();
                         foreach (DynamicObject dc in dcl)
@@ -149,14 +149,14 @@ order by de.fdate");
                         sourceBillIds.Add(Convert.ToInt64(item["FID"]));
                         option.SourceBillIds = sourceBillIds;
                         List<long> sourceBillEntryIds = new List<long>();
-                        List<int> mount = new List<int>();
+                        List<decimal> mount = new List<decimal>();  //lc 更改成小数
                         List<int> srcbillseq = new List<int>();
                         List<long> prtIdList = new List<long>();
                         Dictionary<string, int> dic = new Dictionary<string, int>();
                         foreach (DynamicObject dc in dcl)
                         {
                             sourceBillEntryIds.Add(Convert.ToInt64(dc["FDETAILID"]));
-                            mount.Add(Convert.ToInt32(dc["amount"]));
+                            mount.Add(Convert.ToDecimal(dc["amount"]));
                             prtIdList.Add(Convert.ToInt64(dc["detInId"]));
                             srcbillseq.Add(Convert.ToInt32(dc["FMOENTRYSEQ"]));
                             dic.Add(Convert.ToString(dc["FMONUMBER"]) + Convert.ToString(dc["FMOENTRYSEQ"]), Convert.ToInt32(dc["detInId"]));
@@ -216,7 +216,7 @@ order by de.fdate");
                 // 开始构建下推参数：
                 // 待下推的源单数据行
                 List<ListSelectedRow> srcSelectedRows = new List<ListSelectedRow>();
-                Dictionary<long, List<Tuple<string, int>>> dic = new Dictionary<long, List<Tuple<string, int>>>();
+                Dictionary<long, List<Tuple<string, decimal>>> dic = new Dictionary<long, List<Tuple<string, decimal>>>();
                 foreach (long billId in option.SourceBillIds)
                 {
                     srcSelectedRows = new List<ListSelectedRow>();
@@ -253,7 +253,7 @@ order by de.fdate");
                         fieldValues.Add(SourceEntryEntityKey, option.SourceBillEntryIds[i].ToString());
                         row.FieldValues = fieldValues;
                         srcSelectedRows.Add(row);
-                        dic.Add(option.SourceBillEntryIds[i], new List<Tuple<string, int>> { new Tuple<string, int>(" ", option.mount[i]) });
+                        dic.Add(option.SourceBillEntryIds[i], new List<Tuple<string, decimal>> { new Tuple<string, decimal>(" ", option.mount[i]) });//lcdoit 更改为浮点类型
                     }
                 }
                 // 指定目标单单据类型:情况比较复杂，直接留空，会下推到默认的单据类型
@@ -446,7 +446,7 @@ order by de.fdate");
                             salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
                             salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                             salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
-                            salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                            salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);
                             salEntryData.stocknumber = Convert.ToString(purTransferData["Fstockid"]);
                             salEntryDataList.Add(salEntryData);
                         }
@@ -1305,7 +1305,7 @@ and alt.isPur=0
                             salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                             salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
                             salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
-                            salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                            salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);//lcdoit 更改成小数
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);

@@ -57,7 +57,7 @@ namespace KEEPER.K3._3D.Core.ParamOption
         /// <summary>
         /// 合格或不合格数量
         /// </summary>
-        public List<int> mount { get; set; }
+        public List<decimal> mount { get; set; }
         /// <summary>
         /// 源单行号
         /// </summary>

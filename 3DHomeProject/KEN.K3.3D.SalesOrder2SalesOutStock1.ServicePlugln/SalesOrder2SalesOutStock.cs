@@ -21,9 +21,9 @@ namespace KEN.K3._3D.SalesOrder2SalesOutStock.ServicePlugln
         {
             base.OnAfterCreateLink(e);
             OperateOption Option = base.Option;
-            List<int> amount = new List<int>();
+            List<decimal> amount = new List<decimal>();
             
-            if (Option.TryGetVariableValue<List<int>>("OutStockAmount", out amount))
+            if (Option.TryGetVariableValue<List<decimal>>("OutStockAmount", out amount))
             {
                 List<int> srcbillseq = Option.GetVariableValue<List<int>>("srcbillseq");
                 DateTime FDATE = Option.GetVariableValue<DateTime>("FDATE");
