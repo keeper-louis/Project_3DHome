@@ -109,7 +109,7 @@ namespace KEEPER.K3.APP
                         foreach (DynamicObject dc in dcl)
                         {
                             sourceBillEntryIds.Add(Convert.ToInt64(dc["FDETAILID"]));
-                            mount.Add(Convert.ToInt32(dc["amount"]));
+                            mount.Add(Convert.ToDecimal(dc["amount"]));
                             prtIdList.Add(Convert.ToInt64(dc["PrtInId"]));
                             dic.Add(Convert.ToString(dc["FMONUMBER"]) + Convert.ToString(dc["FMOENTRYSEQ"]) + Convert.ToString(dc["Technicscode"]), Convert.ToInt32(dc["PrtInId"]));
                         }
@@ -1379,7 +1379,7 @@ and alt.Warehouseout='8'
                         salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                         salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
                         salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
-                        salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                        salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);//lc add 1223 改成小数
                         salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                         salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                         salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
@@ -1446,7 +1446,7 @@ and alt.Warehouseout<>'8'
                             salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                             salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
                             salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
-                            salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                            salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]); //lcdoit 1223 改成小数
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
@@ -1521,7 +1521,7 @@ and alt.isPur=1
                         salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                         salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
                         salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
-                        salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                        salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);//改小数  lc add 1223
                         salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                         salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                         salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
@@ -2693,7 +2693,7 @@ where alt.fdate = '{0}'  and tbm.FWORKSHOPID={1} ", Convert.ToDateTime(dateData[
                             salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                             salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
                             salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
-                            salEntryData.amount = Convert.ToInt32(purTransferData["amount"]);
+                            salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);//lc add 1223 小数
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
