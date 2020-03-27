@@ -88,6 +88,7 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
                 for (int i = 0; i < selectRows.Count(); i++)
                 {
+
                     string strSql = string.Format(@"/*dialect*/Delete Deliverytable where Salenumber='{0}' and Linenumber='{1}'",
 Convert.ToString(selectRows[i].DataRow["FSalenumber"]), Convert.ToString(selectRows[i].DataRow["FLinenumber"]));
                     DBUtils.Execute(this.Context, strSql);
@@ -224,6 +225,12 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
 
                 DBUtils.Execute(this.Context, strSql2);
 
+            }
+            //20200320 删除关账错误数据 lcadd
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "btndelcloseGZ", StringComparison.CurrentCultureIgnoreCase))
+            {
+                string strSql = string.Format(@"/*dialect*/  delete from  Deliverytable where reason  like  '%关账%'  ");
+                DBUtils.Execute(this.Context, strSql);
             }
             this.View.Refresh();
         }

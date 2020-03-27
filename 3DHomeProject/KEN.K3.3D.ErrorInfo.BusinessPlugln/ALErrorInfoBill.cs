@@ -251,14 +251,15 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
                 }
                 // 删除 调拨 B 表
                 string filter = getSelectedRowsElements("FBILLNO");
-                string strSql2 = string.Format(@"/*dialect*/ delete altable from altablein c where c.Salenumber=altable.Salenumber and c.Linenumber=altable.Linenumber and  c.ferrormsg in ('大于可调拨数量')   and c.status=2  and c.id in ({0}) ", filter);
+                //lc 20200206 去掉
+                //string strSql2 = string.Format(@"/*dialect*/ delete altable from altablein c where c.Salenumber=altable.Salenumber and c.Linenumber=altable.Linenumber and  c.ferrormsg in ('大于可调拨数量')   and c.status=2  and c.id in ({0}) ", filter);
 
-                DBUtils.Execute(this.Context, strSql2);
+                //DBUtils.Execute(this.Context, strSql2);
 
                 // 删除 调拨 C表
-                string strSql3 = string.Format(@"/*dialect*/ delete   altablein  where   ferrormsg in ('大于可调拨数量')   and  status=2  and id in ({0}) ", filter );
+                //string strSql3 = string.Format(@"/*dialect*/ delete   altablein  where   ferrormsg in ('大于可调拨数量')   and  status=2  and id in ({0}) ", filter );
 
-                DBUtils.Execute(this.Context, strSql3);
+               // DBUtils.Execute(this.Context, strSql3);
 
 
                 //删除 调拨错误信息表数据
@@ -268,8 +269,14 @@ namespace KEN.K3._3D.ErrorInfo.BusinessPlugln
 
 
             }
+            //20200320 删除关账错误数据 lcadd
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "btndelcloseGZ", StringComparison.CurrentCultureIgnoreCase))
+            {
+                string strSql = string.Format(@"/*dialect*/  delete from  Deliverytable where reason  like  '%关账%'  " );
+                DBUtils.Execute(this.Context, strSql);
+            }
 
-            this.View.Refresh();
+                this.View.Refresh();
         }
         private Boolean checkData(String key)
         {

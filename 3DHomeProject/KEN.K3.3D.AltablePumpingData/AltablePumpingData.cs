@@ -66,6 +66,8 @@ or t_BD_Material.fnumber  like '10.412%'
 or t_BD_Material.fnumber  like '10.413%' 
 or t_BD_Material.fnumber  like '10.414%'
 or t_BD_Material.fnumber  like '10.415%'
+or t_BD_Material.fnumber  like '10.416%'
+or t_BD_Material.fnumber  like '10.417%'
 or t_BD_Material.fnumber  like '01.07.0142%' or t_BD_Material.fnumber  like '05.902.2027.225.215%' 
 or t_BD_Material.fnumber  like '05.902.2027.435.215%' or t_BD_Material.fnumber  like '05.902.2027.827.225%'
 or t_BD_Material.fnumber  like '05.902.2027.827.435%' or t_BD_Material.fnumber  like '06.03.0003%' 
@@ -140,6 +142,8 @@ or t_BD_Material.fnumber  like '10.412%'
 or t_BD_Material.fnumber  like '10.413%' 
 or t_BD_Material.fnumber  like '10.414%'
 or t_BD_Material.fnumber  like '10.415%'
+or t_BD_Material.fnumber  like '10.416%'
+or t_BD_Material.fnumber  like '10.417%'
 ) and tso.FBILLNO=alt.Salenumber and  tsoe.FSEQ=alt.Linenumber 
 and alt.status=0  
  group by  alt.Salenumber,alt.Linenumber,T_BD_MATERIAL_L.FNAME

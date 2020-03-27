@@ -29,6 +29,7 @@ using KEEPER.K3._3D.Core.Entity;
 using System.Data;
 using System.Data.SqlClient;
 using Kingdee.BOS.Core.Validation;
+using Kingdee.BOS.Log;
 
 namespace KEEPER.K3.APP
 {
@@ -123,13 +124,19 @@ namespace KEEPER.K3.APP
                 }
                 if (Obstatus == ObjectEnum.SO2DE)
                 {
-                    string createSql = "create table {0}(FID INT,FDETAILID decimal(23, 10), amount decimal(23, 10),detInId INT,FDATE DATETIME,FMONUMBER nvarchar(50),FMOENTRYSEQ int)";
+                    string createSql = "create table {0}(FID INT,FDETAILID decimal(23, 10), amount decimal(23, 10),detInId INT,FDATE DATETIME,FMONUMBER nvarchar(50),FMOENTRYSEQ int ,materialnumber nvarchar(100),materialname nvarchar(100), fqty decimal(23, 10) )";
                     tableName = CreateTempTalbe(ctx, createSql);
-                    string strSqlAll = string.Format(@"/*dialect*/insert into {0} select a.fid,a.FDETAILID,de.Amount,de.id,de.fdate,de.Salenumber,de.Linenumber from detablein de 
+                    string strSqlAll = string.Format(@"/*dialect*/insert into {0} select a.fid,a.FDETAILID,de.Amount,de.id,de.fdate,rtrim(de.Salenumber) Salenumber ,de.Linenumber,a.materialnumber,a.materialname,a.fqty from detablein de 
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
-from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe where tso.fid=tsoe.FID and  tso.FCLOSESTATUS='A' ) a
+,ma.fnumber materialnumber,mal.fname materialname,tsoe.fqty
+from T_SAL_ORDER tso,T_SAL_ORDERENTRY tsoe, T_BD_MATERIAL ma,T_BD_MATERIAL_L mal
+where tso.fid=tsoe.FID and  tso.FCLOSESTATUS='A' 
+and  ma.FMATERIALID=tsoe.FMATERIALID  
+and mal.FMATERIALID=mal.FMATERIALID and mal.FMATERIALID=ma.FMASTERID 
+) a
 on de.Salenumber=a.FBILLNO and de.Linenumber=a.FSEQ
-where de.status=3  and not exists ( select * from dubbleerro pr where pr.FMONUMBER=de.Salenumber and pr.FMOENTRYSEQ=de.Linenumber ) ", tableName);
+where de.status=3  and not exists ( select * from dubbleerro pr where pr.FMONUMBER=de.Salenumber and pr.FMOENTRYSEQ=de.Linenumber )
+ ", tableName);
                     DBUtils.Execute(ctx, strSqlAll);
                     string strSql = string.Format(@"/*dialect*/select distinct top 10 a.fid,de.fdate from detablein de 
 left join (select tso.fid fid,tsoe.FENTRYID FDETAILID,tso.FBILLNO,tsoe.FSEQ 
@@ -142,7 +149,9 @@ order by de.fdate");
                     foreach (DynamicObject item in OlaPustCol)
                     {
                         ConvertOption option = new ConvertOption();
-                        string strSqlOption = string.Format(@"select * from {0} where FID = {1} and FDATE = '{2}'", tableName, Convert.ToInt64(item["FID"]), Convert.ToDateTime(item["FDATE"]));
+                        //判断是否是滑动门，如果是给临时表数量设置 1
+                        
+                            string strSqlOption = string.Format(@"select * from {0} where FID = {1} and FDATE = '{2}'", tableName, Convert.ToInt64(item["FID"]), Convert.ToDateTime(item["FDATE"]));
                         DynamicObjectCollection dcl = DBUtils.ExecuteDynamicObject(ctx, strSqlOption);
                         option.FDATE = Convert.ToDateTime(item["FDATE"]);
                         List<long> sourceBillIds = new List<long>();
@@ -155,8 +164,54 @@ order by de.fdate");
                         Dictionary<string, int> dic = new Dictionary<string, int>();
                         foreach (DynamicObject dc in dcl)
                         {
+                            Boolean is_hd_door = false;
+                            string materialnumber = Convert.ToString(dc["materialnumber"]);
+                            if (materialnumber.StartsWith("10.401")
+                                || materialnumber.StartsWith("10.402")
+                                || materialnumber.StartsWith("10.403")
+                                || materialnumber.StartsWith("10.404")
+                                || materialnumber.StartsWith("10.405")
+                                || materialnumber.StartsWith("10.406")
+                                || materialnumber.StartsWith("10.407")
+                                || materialnumber.StartsWith("10.408")
+                                || materialnumber.StartsWith("10.409")
+                                || materialnumber.StartsWith("10.410")
+                                || materialnumber.StartsWith("10.411")
+                                || materialnumber.StartsWith("10.412")
+                                || materialnumber.StartsWith("10.413")
+                                || materialnumber.StartsWith("10.414")
+                                || materialnumber.StartsWith("10.415")
+                                || materialnumber.StartsWith("10.416")
+                                || materialnumber.StartsWith("10.417")
+                                )
+                            {
+                                //判断是否是滑动门 
+                                is_hd_door = true;
+ 
+                            }
+                            // 判断是套板
+                            Boolean is_tb = false;
+                            if (materialnumber.StartsWith("10.501"))
+                            {
+                                is_tb = true;
+                            }
+
+
                             sourceBillEntryIds.Add(Convert.ToInt64(dc["FDETAILID"]));
-                            mount.Add(Convert.ToDecimal(dc["amount"]));
+                            if (is_hd_door==true)
+                                mount.Add(Convert.ToDecimal("1"));//如果是滑动门强制为1
+                            else
+                                mount.Add(Convert.ToDecimal(dc["amount"]));
+                            if (is_tb)
+                            {
+                               Decimal orderqty= Convert.ToDecimal(dc["fqty"]);//订单数量
+                               Decimal amount = Convert.ToDecimal(dc["amount"]);//扫描数量
+                                if (amount.CompareTo(orderqty) > 0)
+                                {
+                                    mount.Add(Convert.ToDecimal(orderqty));
+                                }
+
+                            }
                             prtIdList.Add(Convert.ToInt64(dc["detInId"]));
                             srcbillseq.Add(Convert.ToInt32(dc["FMOENTRYSEQ"]));
                             dic.Add(Convert.ToString(dc["FMONUMBER"]) + Convert.ToString(dc["FMOENTRYSEQ"]), Convert.ToInt32(dc["detInId"]));
@@ -1279,6 +1334,8 @@ order by de.fdate");
 	   orderentry.F_YJ_TEXT5,
 	   orderentry.F_YJ_TEXT6,
 	   orderentry.F_YJ_TEXT7
+       ,ma.fnumber materialnumber,
+	   mal.FNAME materialname
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -1288,13 +1345,71 @@ and alt.isPur=0
  inner join t_sal_orderentry orderentry
     on salorder.fid = orderentry.fid
    and alt.linenumber = orderentry.fseq
+  left join T_BD_MATERIAL ma on ma.FMATERIALID=orderentry.FMATERIALID  
+  left join T_BD_MATERIAL_L mal on mal.FMATERIALID=mal.FMATERIALID and mal.FMATERIALID=ma.FMASTERID 
    left join t_BD_MaterialInvPty 
    on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
- where alt.fdate = '{0}'    ", Convert.ToDateTime(dateData[0]["fdate"]));
+ where alt.fdate = '{0}' order by   alt.salenumber,
+       alt.linenumber,  ma.fnumber   ", Convert.ToDateTime(dateData[0]["fdate"]));
                         DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                         List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
-                        foreach (DynamicObject purTransferData in PurTransferData)
+                    Dictionary<string, long> hd_door_dic = new Dictionary<string, long>();//滑动门
+                    Dictionary<string, long> tb_dic = new Dictionary<string, long>();//套板
+                    foreach (DynamicObject purTransferData in PurTransferData)
                         {
+                        // 判断物料编码是否是滑动门
+                            string materialnumber = Convert.ToString(purTransferData["materialnumber"]);//物料编码
+                            string salenumber = Convert.ToString(purTransferData["salenumber"]);//销售订单号
+                            string linenumber = Convert.ToString(purTransferData["linenumber"]);//销售订单行号
+                            long id =Convert.ToInt64(purTransferData["id"]);//内码Id
+                            Boolean is_hd_door = false;
+                            Boolean is_tb = false;
+                        string key = salenumber + linenumber + materialnumber;
+                            
+                        if (materialnumber.StartsWith("10.401")
+                            || materialnumber.StartsWith("10.402")
+                            || materialnumber.StartsWith("10.403")
+                            || materialnumber.StartsWith("10.404")
+                            || materialnumber.StartsWith("10.405")
+                            || materialnumber.StartsWith("10.406")
+                            || materialnumber.StartsWith("10.407")
+                            || materialnumber.StartsWith("10.408")
+                            || materialnumber.StartsWith("10.409")
+                            || materialnumber.StartsWith("10.410")
+                            || materialnumber.StartsWith("10.411")
+                            || materialnumber.StartsWith("10.412")
+                            || materialnumber.StartsWith("10.413")
+                            || materialnumber.StartsWith("10.414")
+                            || materialnumber.StartsWith("10.415")
+                            || materialnumber.StartsWith("10.416")
+                            || materialnumber.StartsWith("10.417")
+                            )
+                        {
+                            is_hd_door = true;
+                            if (hd_door_dic.ContainsKey(key))
+                            {
+                                strSql = string.Format(@"/*dialect*/ update altablein set status=2,ferrormsg='滑动门重复的物料'  where id ={0} ", id);
+                                DBUtils.Execute(ctx, strSql);
+                                //如果是滑动门 且已经取过就跳过
+                                continue;
+                            }
+                            else
+                            {
+                                hd_door_dic.Add(key, id);
+
+                            }
+                        }
+                        //判断是否是 套板 10.501 
+                        if (materialnumber.StartsWith("10.501")
+                            )
+                        {
+                            is_tb = true;
+                            if (tb_dic.ContainsKey(key))
+                            {
+
+                            }
+                        }
+
                             SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
                             salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
                             salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
@@ -1305,8 +1420,11 @@ and alt.isPur=0
                             salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                             salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
                             salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
+                           if (is_hd_door==false)
                             salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);//lcdoit 更改成小数
-                            salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
+                            else
+                            salEntryData.amount = Convert.ToDecimal("1");//如果是滑动门 数量是 1
+                        salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
                         //简单生产入库、调拨单、销售出库要将预订单中的“型号、ABC取值''携带过来。
@@ -1353,6 +1471,8 @@ and alt.isPur=0
 	   orderentry.F_YJ_TEXT5,
 	   orderentry.F_YJ_TEXT6,
 	   orderentry.F_YJ_TEXT7
+    ,ma.fnumber materialnumber,
+	   mal.FNAME materialname
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -1362,13 +1482,71 @@ and alt.isPur=0
     on salorder.fid = orderentry.fid
    and alt.linenumber = orderentry.fseq
 and alt.Warehouseout='8'
+ left join T_BD_MATERIAL ma on ma.FMATERIALID=orderentry.FMATERIALID  
+  left join T_BD_MATERIAL_L mal on mal.FMATERIALID=mal.FMATERIALID and mal.FMATERIALID=ma.FMASTERID 
    left join t_BD_MaterialInvPty 
    on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
  where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
                     DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                     List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
+                    Dictionary<string, long> hd_door_dic = new Dictionary<string, long>();//滑动门
+                    Dictionary<string, long> tb_dic = new Dictionary<string, long>();//套板
                     foreach (DynamicObject purTransferData in PurTransferData)
                     {
+
+                        // 判断物料编码是否是滑动门
+                        string materialnumber = Convert.ToString(purTransferData["materialnumber"]);//物料编码
+                        string salenumber = Convert.ToString(purTransferData["salenumber"]);//销售订单号
+                        string linenumber = Convert.ToString(purTransferData["linenumber"]);//销售订单行号
+                        long id = Convert.ToInt64(purTransferData["id"]);//内码Id
+                        Boolean is_hd_door = false;
+                        Boolean is_tb = false;
+                        string key = salenumber + linenumber + materialnumber;
+
+                        if (materialnumber.StartsWith("10.401")
+                            || materialnumber.StartsWith("10.402")
+                            || materialnumber.StartsWith("10.403")
+                            || materialnumber.StartsWith("10.404")
+                            || materialnumber.StartsWith("10.405")
+                            || materialnumber.StartsWith("10.406")
+                            || materialnumber.StartsWith("10.407")
+                            || materialnumber.StartsWith("10.408")
+                            || materialnumber.StartsWith("10.409")
+                            || materialnumber.StartsWith("10.410")
+                            || materialnumber.StartsWith("10.411")
+                            || materialnumber.StartsWith("10.412")
+                            || materialnumber.StartsWith("10.413")
+                            || materialnumber.StartsWith("10.414")
+                            || materialnumber.StartsWith("10.415")
+                            || materialnumber.StartsWith("10.416")
+                            || materialnumber.StartsWith("10.417")
+                            )
+                        {
+                            is_hd_door = true;
+                            if (hd_door_dic.ContainsKey(key))
+                            {
+                                strSql = string.Format(@"/*dialect*/ update altablein set status=2,ferrormsg='滑动门重复的物料'  where id ={0} ", id);
+                                DBUtils.Execute(ctx, strSql);
+                                //如果是滑动门 且已经取过就跳过
+                                continue;
+                            }
+                            else
+                            {
+                                hd_door_dic.Add(key, id);
+
+                            }
+                        }
+                        //判断是否是 套板 10.501 
+                        if (materialnumber.StartsWith("10.501")
+                            )
+                        {
+                            is_tb = true;
+                            if (tb_dic.ContainsKey(key))
+                            {
+
+                            }
+                        }
+
                         SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
                         salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
                         salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
@@ -1379,7 +1557,11 @@ and alt.Warehouseout='8'
                         salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                         salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
                         salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
-                        salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);//lc add 1223 改成小数
+                        if (is_hd_door == false)
+                            salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);//lcdoit 更改成小数
+                        else
+                            salEntryData.amount = Convert.ToDecimal("1");//如果是滑动门 数量是 1
+                       //salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);//lc add 1223 改成小数
                         salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                         salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                         salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
@@ -1420,6 +1602,8 @@ and alt.Warehouseout='8'
 	   orderentry.F_YJ_TEXT5,
 	   orderentry.F_YJ_TEXT6,
 	   orderentry.F_YJ_TEXT7
+ ,ma.fnumber materialnumber,
+	   mal.FNAME materialname
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -1429,13 +1613,72 @@ and alt.Warehouseout='8'
     on salorder.fid = orderentry.fid
    and alt.linenumber = orderentry.fseq
 and alt.Warehouseout<>'8'
+ left join T_BD_MATERIAL ma on ma.FMATERIALID=orderentry.FMATERIALID  
+  left join T_BD_MATERIAL_L mal on mal.FMATERIALID=mal.FMATERIALID and mal.FMATERIALID=ma.FMASTERID 
    left join t_BD_MaterialInvPty 
    on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
  where alt.fdate = '{0}'", Convert.ToDateTime(dateData[0]["fdate"]));
                         DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                         List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
+                        Dictionary<string, long> hd_door_dic = new Dictionary<string, long>();//滑动门
+                        Dictionary<string, long> tb_dic = new Dictionary<string, long>();//套板
                         foreach (DynamicObject purTransferData in PurTransferData)
                         {
+
+
+                            // 判断物料编码是否是滑动门
+                            string materialnumber = Convert.ToString(purTransferData["materialnumber"]);//物料编码
+                            string salenumber = Convert.ToString(purTransferData["salenumber"]);//销售订单号
+                            string linenumber = Convert.ToString(purTransferData["linenumber"]);//销售订单行号
+                            long id = Convert.ToInt64(purTransferData["id"]);//内码Id
+                            Boolean is_hd_door = false;
+                            Boolean is_tb = false;
+                            string key = salenumber + linenumber + materialnumber;
+
+                            if (materialnumber.StartsWith("10.401")
+                                || materialnumber.StartsWith("10.402")
+                                || materialnumber.StartsWith("10.403")
+                                || materialnumber.StartsWith("10.404")
+                                || materialnumber.StartsWith("10.405")
+                                || materialnumber.StartsWith("10.406")
+                                || materialnumber.StartsWith("10.407")
+                                || materialnumber.StartsWith("10.408")
+                                || materialnumber.StartsWith("10.409")
+                                || materialnumber.StartsWith("10.410")
+                                || materialnumber.StartsWith("10.411")
+                                || materialnumber.StartsWith("10.412")
+                                || materialnumber.StartsWith("10.413")
+                                || materialnumber.StartsWith("10.414")
+                                || materialnumber.StartsWith("10.415")
+                                || materialnumber.StartsWith("10.416")
+                                || materialnumber.StartsWith("10.417")
+                                )
+                            {
+                                is_hd_door = true;
+                                if (hd_door_dic.ContainsKey(key))
+                                {
+                                    strSql = string.Format(@"/*dialect*/ update altablein set status=2,ferrormsg='滑动门重复的物料'  where id ={0} ", id);
+                                    DBUtils.Execute(ctx, strSql);
+                                    //如果是滑动门 且已经取过就跳过
+                                    continue;
+                                }
+                                else
+                                {
+                                    hd_door_dic.Add(key, id);
+
+                                }
+                            }
+                            //判断是否是 套板 10.501 
+                            if (materialnumber.StartsWith("10.501")
+                                )
+                            {
+                                is_tb = true;
+                                if (tb_dic.ContainsKey(key))
+                                {
+
+                                }
+                            }
+
                             SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
                             salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
                             salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
@@ -1446,7 +1689,11 @@ and alt.Warehouseout<>'8'
                             salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
                             salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
                             salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
-                            salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]); //lcdoit 1223 改成小数
+                            if (is_hd_door == false)
+                                salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]);//lcdoit 更改成小数
+                            else
+                                salEntryData.amount = Convert.ToDecimal("1");//如果是滑动门 数量是 1
+                            //salEntryData.amount = Convert.ToDecimal(purTransferData["amount"]); //lcdoit 1223 改成小数
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
@@ -2467,6 +2714,7 @@ and alt.isPur=1
                     DynamicObjectCollection rpt = cc["SAL_OUTSTOCKENTRY"] as DynamicObjectCollection;
                     foreach (DynamicObject item in rpt)
                     {
+                        Logger.Info("3D_下推出库接口", Convert.ToString(item["SoorDerno"]) + Convert.ToString(item["Fsrcbillseq"]));
                         item["FDETABLEINID"] = option.dic[Convert.ToString(item["SoorDerno"]) + Convert.ToString(item["Fsrcbillseq"])];
 
                     }
@@ -2665,6 +2913,8 @@ and alt.isPur=1
 	   orderentry.F_YJ_TEXT5,
 	   orderentry.F_YJ_TEXT6,
 	   orderentry.F_YJ_TEXT7
+	   ,ma.fnumber materialnumber,
+	   mal.FNAME materialname
   from altablein alt
  inner join t_sal_order salorder
     on alt.salenumber = salorder.fbillno
@@ -2674,6 +2924,8 @@ and alt.isPur=0
  inner join t_sal_orderentry orderentry
     on salorder.fid = orderentry.fid
    and alt.linenumber = orderentry.fseq
+   left join T_BD_MATERIAL ma on ma.FMATERIALID=orderentry.FMATERIALID  
+   left join T_BD_MATERIAL_L mal on mal.FMATERIALID=mal.FMATERIALID and mal.FMATERIALID=ma.FMASTERID 
    left join t_BD_MaterialInvPty 
    on FINVPTYID='10003' and t_BD_MaterialInvPty.FMATERIALID=orderentry.FMATERIALID
 left join t_BD_MaterialBase tbmb on  tbmb.FMATERIALID=orderentry.FMATERIALID
@@ -2681,7 +2933,69 @@ left join  t_BD_MaterialProduce tbm on   tbm.FMATERIALID=tbmb.FMATERIALID
 where alt.fdate = '{0}'  and tbm.FWORKSHOPID={1} ", Convert.ToDateTime(dateData[0]["fdate"]), workshopid);
                         DynamicObjectCollection PurTransferData = DBUtils.ExecuteDynamicObject(ctx, strSql, null);
                         List<SalOrder2DirectTrans> salEntryDataList = new List<SalOrder2DirectTrans>();
-                        foreach (DynamicObject purTransferData in PurTransferData)
+                    foreach (DynamicObject purTransferData in PurTransferData)
+                    {
+                        string materialnumber = Convert.ToString(purTransferData["materialnumber"]);//物料编码
+                        string saleNumber = Convert.ToString(purTransferData["salenumber"]);//销售订单号
+                        string lineNumber = Convert.ToString(purTransferData["linenumber"]);//销售订单行号
+                        long id = Convert.ToInt64(purTransferData["id"]);// 内码Id 
+                        Dictionary<string, long> dic = new Dictionary<string, long>();
+                        //判断包含滑动门
+                        Boolean is_hd_door = false;
+                        if (materialnumber.StartsWith("10.401")
+                            || materialnumber.Contains("10.402")
+                            || materialnumber.Contains("10.403")
+                            || materialnumber.Contains("10.404")
+                            || materialnumber.Contains("10.405")
+                            || materialnumber.Contains("10.406")
+                            || materialnumber.Contains("10.407")
+                            || materialnumber.Contains("10.408")
+                            || materialnumber.Contains("10.409")
+                            || materialnumber.Contains("10.410")
+                            || materialnumber.Contains("10.411")
+                            || materialnumber.Contains("10.412")
+                            || materialnumber.Contains("10.413")
+                            || materialnumber.Contains("10.414")
+                            || materialnumber.Contains("10.415")
+                            || materialnumber.Contains("10.416")
+                            || materialnumber.Contains("10.417")
+                            )
+                        {
+                            is_hd_door = true;
+                            string key = saleNumber + lineNumber + materialnumber;
+                            if (dic.ContainsKey(key))
+                            {
+                                strSql = string.Format(@"/*dialect*/ update altablein set status=2,ferrormsg='滑动门重复的物料' where id ={0}", id);
+                                DBUtils.Execute(ctx, strSql);
+                                continue;
+
+                            }
+                            else
+                            {
+                                dic.Add(key, id);
+                                SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
+                                salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
+                                salEntryData.FDATE = Convert.ToDateTime(purTransferData["fdate"]);
+                                salEntryData.saleNumber = Convert.ToString(purTransferData["salenumber"]);
+                                salEntryData.lineNumber = Convert.ToString(purTransferData["linenumber"]);
+                                salEntryData.packcode = Convert.ToString(purTransferData["Packcode"]);
+                                salEntryData.MATERIALID = Convert.ToInt64(purTransferData["FMATERIALID"]);
+                                salEntryData.AUXPROPID = Convert.ToInt64(purTransferData["FAUXPROPID"]);
+                                salEntryData.Lot = Convert.ToInt64(purTransferData["FLOT"]);
+                                salEntryData.Fbomid = Convert.ToString(purTransferData["Fbomid"]);
+                                salEntryData.amount = Convert.ToDecimal("1");//lc add 1223 小数
+                                salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
+                                salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
+                                salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
+                                salEntryData.PMSModel = Convert.ToString(purTransferData["F_YJ_TEXT4"]);
+                                salEntryData.descA = Convert.ToString(purTransferData["F_YJ_TEXT5"]);
+                                salEntryData.descB = Convert.ToString(purTransferData["F_YJ_TEXT6"]);
+                                salEntryData.descC = Convert.ToString(purTransferData["F_YJ_TEXT7"]);
+                                //add 1、 简单生产入库、调拨单、销售出库要将预订单中的“型号、ABC取值''携带过来。
+                                salEntryDataList.Add(salEntryData);
+                            }
+                        }
+                        if (is_hd_door == false)
                         {
                             SalOrder2DirectTrans salEntryData = new SalOrder2DirectTrans();
                             salEntryData.altID = Convert.ToInt64(purTransferData["id"]);
@@ -2697,13 +3011,14 @@ where alt.fdate = '{0}'  and tbm.FWORKSHOPID={1} ", Convert.ToDateTime(dateData[
                             salEntryData.stocknumberout = Convert.ToString(purTransferData["Warehouseout"]);
                             salEntryData.stocknumberin = Convert.ToString(purTransferData["Warehousein"]);
                             salEntryData.FISENABLE = Convert.ToString(purTransferData["FISENABLE"]);
-                        salEntryData.PMSModel= Convert.ToString(purTransferData["F_YJ_TEXT4"]);
-                        salEntryData.descA = Convert.ToString(purTransferData["F_YJ_TEXT5"]);
-                        salEntryData.descB = Convert.ToString(purTransferData["F_YJ_TEXT6"]);
-                        salEntryData.descC = Convert.ToString(purTransferData["F_YJ_TEXT7"]);
-                        //add 1、 简单生产入库、调拨单、销售出库要将预订单中的“型号、ABC取值''携带过来。
-                        salEntryDataList.Add(salEntryData);
+                            salEntryData.PMSModel = Convert.ToString(purTransferData["F_YJ_TEXT4"]);
+                            salEntryData.descA = Convert.ToString(purTransferData["F_YJ_TEXT5"]);
+                            salEntryData.descB = Convert.ToString(purTransferData["F_YJ_TEXT6"]);
+                            salEntryData.descC = Convert.ToString(purTransferData["F_YJ_TEXT7"]);
+                            //add 1、 简单生产入库、调拨单、销售出库要将预订单中的“型号、ABC取值''携带过来。
+                            salEntryDataList.Add(salEntryData);
                         }
+                    }
                         list.SalOrder2DirectTrans = salEntryDataList;
                         return list;
                     
