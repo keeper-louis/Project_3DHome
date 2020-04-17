@@ -46,7 +46,14 @@ where c.salenumber=d.Salenumber and c.linenumber=d.Linenumber and c.scantime<'20
             //删除问题数据
             strSql = string.Format(@"/*dialect*/delete Allocationview where linenumber in (select Linenumber from Allocationview de where PATINDEX('%[^0-9]%', de.Linenumber)<>0) ");
             DBUtils.Execute(ctx, strSql);
-
+            //删除 
+            //modify 2020/04/16 物料编码为10.4开头的都是铝材门。铝材门的扫码数据应该以PMS对应的销售订单号、行号、物料编码（10.4开头）、ID号（M开头）作为获取数据的条件并执行去重规则（去重规则不变,重点：只有物料编码为10.4开头的使用此中获取数据规则，因为后期配件录入系统其ID号不为M开头，以免影响此类数据生成）。该调整只影响入库和调拨接口。3月数据不必重新生成。
+            strSql = string.Format(@"/*dialect*/  delete from Allocationview where id in ( select    alt.id from Allocationview  alt, T_SAL_ORDERENTRY  tsoe , T_SAL_ORDER tso,t_BD_Material t_BD_Material,T_BD_MATERIAL_L T_BD_MATERIAL_L
+   where tsoe.fid=tso.fid and t_BD_Material.FMASTERID=T_BD_MATERIAL_L.FMATERIALID
+  and t_BD_Material.FMATERIALID=tsoe.FMATERIALID    and tso.FBILLNO=alt.Salenumber and  tsoe.FSEQ=alt.Linenumber
+  and t_BD_Material.fnumber  like '10.4%'   and id like 'T%'
+  ) and id like 'T%' ");
+            DBUtils.Execute(ctx, strSql);
             //删除问题数据
             strSql = string.Format(@"/*dialect*/delete Allocationview where linenumber ='' or linenumber is null or amount is null or amount ='' or amount=0 ");
             DBUtils.Execute(ctx, strSql);

@@ -232,8 +232,29 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
                 string strSql = string.Format(@"/*dialect*/  delete from  Deliverytable where reason  like  '%关账%'  ");
                 DBUtils.Execute(this.Context, strSql);
             }
+            // 重置 辅助属性错误的 设置状态为0 辅助属性错误数据重置0 add lc 20200409 
+            if (string.Equals(e.BarItemKey.ToUpperInvariant(), "btnresetFz", StringComparison.CurrentCultureIgnoreCase))
+            {
+              
+                //获取选中行
+                ListSelectedRowCollection selectRows = this.ListView.SelectedRowsInfo;
+                //检查选中行数
+                if (selectRows.Count() < 1)
+                {
+                    this.View.ShowErrMessage("请至少选中一条数据！");
+                    return;
+                }
+                // 辅助属性错误的 设置状态为0
+                string filter = getSelectedRowsElements("FBILLNO");
+                string strSql = string.Format(@"/*dialect*/ Update detablein set status=0  , FErrorStatus =0 ,ferrormsg ='' where ferrormsg like '%辅助属性不能为空%' and   id    in ({0}) and status=2 ", filter);
+                DBUtils.Execute(this.Context, strSql);
+            }
+            
             this.View.Refresh();
         }
+        
+
+
         private Boolean checkData(String key)
         {
             if (string.Equals(key, "ReAudit", StringComparison.CurrentCultureIgnoreCase))
