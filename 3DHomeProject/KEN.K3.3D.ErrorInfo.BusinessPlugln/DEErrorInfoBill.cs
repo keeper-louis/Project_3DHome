@@ -248,8 +248,11 @@ left join  (select c.FSRCBILLNO,a.FSRCBILLSEQ,b.FBILLNO from
                 string filter = getSelectedRowsElements("FBILLNO");
                 string strSql = string.Format(@"/*dialect*/ Update detablein set status=0  , FErrorStatus =0 ,ferrormsg ='' where ferrormsg like '%辅助属性不能为空%' and   id    in ({0}) and status=2 ", filter);
                 DBUtils.Execute(this.Context, strSql);
+                // delete from Deliverytable  where REASON like '%辅助属性%'
+                string strSql2 = string.Format(@"/*dialect*/ delete from Deliverytable  where REASON like '%辅助属性%' and FBILLNO in ({0}) ", filter);
+                DBUtils.Execute(this.Context, strSql2);
             }
-            
+
             this.View.Refresh();
         }
         
