@@ -51,7 +51,20 @@ where c.salenumber=d.Salenumber and c.linenumber=d.Linenumber and c.scantime<'20
             strSql = string.Format(@"/*dialect*/  delete from Allocationview where id in ( select    alt.id from Allocationview  alt, T_SAL_ORDERENTRY  tsoe , T_SAL_ORDER tso,t_BD_Material t_BD_Material,T_BD_MATERIAL_L T_BD_MATERIAL_L
    where tsoe.fid=tso.fid and t_BD_Material.FMASTERID=T_BD_MATERIAL_L.FMATERIALID
   and t_BD_Material.FMATERIALID=tsoe.FMATERIALID    and tso.FBILLNO=alt.Salenumber and  tsoe.FSEQ=alt.Linenumber
-  and t_BD_Material.fnumber  like '10.4%'   and id like 'T%'
+  and  (
+ t_BD_Material.fnumber  like '10.401%' or t_BD_Material.fnumber  like '10.402%' 
+or t_BD_Material.fnumber  like '10.403%' or t_BD_Material.fnumber  like '10.404%'  
+or t_BD_Material.fnumber  like '10.405%'
+or t_BD_Material.fnumber  like '10.406%' 
+or t_BD_Material.fnumber  like '10.410%' or t_BD_Material.fnumber  like '10.411%' 
+or t_BD_Material.fnumber  like '10.412%' 
+or t_BD_Material.fnumber  like '10.413%' 
+or t_BD_Material.fnumber  like '10.414%'
+or t_BD_Material.fnumber  like '10.415%'
+or t_BD_Material.fnumber  like '10.416%'
+or t_BD_Material.fnumber  like '10.417%'
+  )
+  and id like 'T%'
   ) and id like 'T%' ");
             DBUtils.Execute(ctx, strSql);
             //删除问题数据
